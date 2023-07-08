@@ -1,0 +1,11 @@
+.letter {
+    --size: 50px;
+
+    width: var(--size);
+    height: var(--size);
+    line-height: var(--size);
+    border: 2px solid blue;
+    display: inline-block;
+    text-align: center;
+    vertical-align: middle;
+}
