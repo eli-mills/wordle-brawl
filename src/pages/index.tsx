@@ -1,7 +1,7 @@
 import Head from 'next/head'
 import Guess from '@/components/Guess'
 import 'react-simple-keyboard/build/css/index.css'
-import kb from '@/styles/Keyboard.module.css'
+import GamePanel from '@/components/GamePanel'
 
 export default function Home() {
 
@@ -12,7 +12,7 @@ export default function Home() {
       </Head>
       <main>
         <GamePanel />
-        <InfoPanel />
+        {/*<InfoPanel />*/}
       </main>
     </>
   )
