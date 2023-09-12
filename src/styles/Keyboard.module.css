@@ -1,13 +1,24 @@
-.keyboard {
-    background-color: darkgray;
-}
-
 .button {
     background: black;
     color: black;
 }
 
-.simple-keyboard.hg-layout-default .hg-button.hg-red {
-    background: rgb(255, 0, 0, 0.7);
+.keyboard {
+    display: grid;
+    grid-template-columns: repeat(20, 1.5rem);
+    grid-auto-rows: 4rem;
+    gap: 10px;
+}
+
+.letterKey {
+    grid-column: span 2;
     color: white;
-  }
+}
+
+.spacerKey {
+    grid-column: span 1;
+}
+
+.bigKey {
+    grid-column: span 3;
+}
