@@ -10,22 +10,32 @@ const thirdRow: string[] = ["Z", "X", "C", "V", "B", "N", "M"];
 
 const foo = (letter: string) : void => console.log(letter);
 
-export default function Keyboard() {
+export default function Keyboard({currentGuess, setCurrentGuess}: {currentGuess: string, setCurrentGuess: (_: string) => void}) {
+    const tryAppendLetterToGuess = (letter: string) : void => {
+        console.log(`appending letter ${letter}`);
+        setCurrentGuess(currentGuess.length >= 5 ? currentGuess : currentGuess.concat(letter));
+    }
+    
+    const tryRemoveLetterFromGuess = () : void => {
+        setCurrentGuess(currentGuess.length <= 0 ? currentGuess : currentGuess.slice(0, currentGuess.length - 1));
+    }
+
+    
     return (
         <div className={styles.keyboard}>
             {
-                firstRow.map(((letter, index) => <Key letter={letter} setState={foo} key={index}/>))
+                firstRow.map(((letter, index) => <Key letter={letter} setState={tryAppendLetterToGuess} key={index}/>))
             }
             <SpacerKey />
             {
 
-                secondRow.map(((letter, index) => <Key letter={letter} setState={foo} key={index}/>))
+                secondRow.map(((letter, index) => <Key letter={letter} setState={tryAppendLetterToGuess} key={index}/>))
             }
             <EnterKey />
             {
-                thirdRow.map(((letter, index) => <Key letter={letter} setState = {foo} key={index}/>))
+                thirdRow.map(((letter, index) => <Key letter={letter} setState = {tryAppendLetterToGuess} key={index}/>))
             }
-            <DeleteKey />
+            <DeleteKey setState={tryRemoveLetterFromGuess}/>
         </div>
     )
 }
