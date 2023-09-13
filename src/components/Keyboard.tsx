@@ -8,16 +8,42 @@ const firstRow: string[] = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"];
 const secondRow: string[] = ["A", "S", "D", "F", "G", "H", "J", "K", "L"];
 const thirdRow: string[] = ["Z", "X", "C", "V", "B", "N", "M"];
 
-const foo = (letter: string) : void => console.log(letter);
+type KeyboardProps = {
+    guesses: string[][],
+    setGuesses: (_: string[][]) => void,
+    currentGuessNum: number, 
+    setCurrentGuessNum: (_: number) => void,
+    currentLetterNum: number,
+    setCurrentLetterNum: (_: number) => void
+}
 
-export default function Keyboard({currentGuess, setCurrentGuess}: {currentGuess: string, setCurrentGuess: (_: string) => void}) {
+export default function Keyboard({
+    guesses,
+    setGuesses,
+    currentGuessNum, 
+    setCurrentGuessNum,
+    currentLetterNum,
+    setCurrentLetterNum
+}:KeyboardProps){
+
     const tryAppendLetterToGuess = (letter: string) : void => {
-        console.log(`appending letter ${letter}`);
-        setCurrentGuess(currentGuess.length >= 5 ? currentGuess : currentGuess.concat(letter));
+        if (currentLetterNum > 4 || currentGuessNum > 5) return;
+
+        const newGuessesArray: string[][] = guesses.map(guess => guess.slice());    // Create deep copy
+        newGuessesArray[currentGuessNum][currentLetterNum] = letter;
+
+        setGuesses(newGuessesArray);
+        setCurrentLetterNum(currentLetterNum + 1);
     }
     
     const tryRemoveLetterFromGuess = () : void => {
-        setCurrentGuess(currentGuess.length <= 0 ? currentGuess : currentGuess.slice(0, currentGuess.length - 1));
+        if (currentLetterNum <= 0) return;
+        
+        const newGuessesArray: string[][] = guesses.map(guess => guess.slice());    // Create deep copy
+        newGuessesArray[currentGuessNum][currentLetterNum - 1] = "";
+        
+        setCurrentLetterNum(currentLetterNum - 1);
+        setGuesses(newGuessesArray);
     }
 
     
