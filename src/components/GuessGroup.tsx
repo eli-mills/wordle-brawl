@@ -1,6 +1,6 @@
 import Guess from '@/components/Guess';
 
-export default function GuessGroup() {
+export default function GuessGroup({currentGuess}: {currentGuess: string}) {
     return (
         <>
             <Guess />
