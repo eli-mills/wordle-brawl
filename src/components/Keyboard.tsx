@@ -46,7 +46,14 @@ export default function Keyboard({
         setGuesses(newGuessesArray);
     }
 
-    
+    const trySubmitGuess = () : void => {
+        if (currentGuessNum > 4) return;
+        if (currentLetterNum < 5) return;
+
+        setCurrentGuessNum(currentGuessNum + 1);
+        setCurrentLetterNum(0);
+    }
+
     return (
         <div className={styles.keyboard}>
             {
@@ -57,7 +64,7 @@ export default function Keyboard({
 
                 secondRow.map(((letter, index) => <Key letter={letter} setState={tryAppendLetterToGuess} key={index}/>))
             }
-            <EnterKey />
+            <EnterKey setState={trySubmitGuess}/>
             {
                 thirdRow.map(((letter, index) => <Key letter={letter} setState = {tryAppendLetterToGuess} key={index}/>))
             }
