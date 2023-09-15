@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+
 import Key from '@/components/Key';
 import SpacerKey from '@/components/SpacerKey';
 import EnterKey from './EnterKey';
@@ -54,19 +56,34 @@ export default function Keyboard({
         setCurrentLetterNum(0);
     }
 
+    useEffect( () => {
+        const handleKeyPressEvent = (e: KeyboardEvent) => {
+            const letters = "QWERTYUIOPASDFGHJKLZXCVBNM";
+            if (e.key === "Enter") {
+                trySubmitGuess();
+            } else if (e.key === "Backspace") {
+                tryRemoveLetterFromGuess();
+            } else if (letters.includes(e.key.toUpperCase())) {
+                tryAppendLetterToGuess(e.key.toUpperCase());
+            }
+        }
+        window.addEventListener("keyup", handleKeyPressEvent);
+        return () => window.removeEventListener("keyup", handleKeyPressEvent);
+    }, [currentLetterNum, currentGuessNum]);
+
     return (
         <div className={styles.keyboard}>
             {
-                firstRow.map(((letter, index) => <Key letter={letter} setState={tryAppendLetterToGuess} key={index}/>))
+                firstRow.map(((letter) => <Key letter={letter} key={letter}/>))
             }
             <SpacerKey />
             {
 
-                secondRow.map(((letter, index) => <Key letter={letter} setState={tryAppendLetterToGuess} key={index}/>))
+                secondRow.map(((letter) => <Key letter={letter} key={letter}/>))
             }
             <EnterKey setState={trySubmitGuess}/>
             {
-                thirdRow.map(((letter, index) => <Key letter={letter} setState = {tryAppendLetterToGuess} key={index}/>))
+                thirdRow.map(((letter) => <Key letter={letter} key={letter}/>))
             }
             <DeleteKey setState={tryRemoveLetterFromGuess}/>
         </div>
