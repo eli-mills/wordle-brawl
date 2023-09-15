@@ -1,13 +1,14 @@
 import Letter from '@/components/Letter'
 
-export default function Guess() {
+type GuessProps = {
+    guesses: string[][],
+    guessNum: number
+}
+
+export default function Guess({guessNum, guesses}: GuessProps) {
     return (
         <div>
-            <Letter />
-            <Letter />
-            <Letter />
-            <Letter />
-            <Letter />
+            {[0, 1, 2, 3, 4].map(num => <Letter key={num} letterNum={num} guessNum={guessNum} guesses={guesses}/>)}
         </div>
     )
 }
