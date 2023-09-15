@@ -16,6 +16,7 @@ export default function GamePanel() {
     );
     const [currentGuessNum, setCurrentGuessNum] = useState(0);
     const [currentLetterNum, setCurrentLetterNum] = useState(0);
+    const [solution, setSolution] = useState(['H', 'O', 'U', 'S', 'E']);
 
     useEffect(()=>console.log(`new currentGuess: ${currentGuessNum}`), [currentGuessNum]);
     
@@ -25,7 +26,8 @@ export default function GamePanel() {
         currentGuessNum,
         setCurrentGuessNum,
         currentLetterNum,
-        setCurrentLetterNum
+        setCurrentLetterNum,
+        solution
     }
 
     return (

@@ -16,7 +16,8 @@ type KeyboardProps = {
     currentGuessNum: number, 
     setCurrentGuessNum: (_: number) => void,
     currentLetterNum: number,
-    setCurrentLetterNum: (_: number) => void
+    setCurrentLetterNum: (_: number) => void,
+    solution: string[]
 }
 
 export default function Keyboard({
@@ -25,7 +26,8 @@ export default function Keyboard({
     currentGuessNum, 
     setCurrentGuessNum,
     currentLetterNum,
-    setCurrentLetterNum
+    setCurrentLetterNum,
+    solution
 }:KeyboardProps){
 
     const tryAppendLetterToGuess = (letter: string) : void => {
@@ -48,13 +50,55 @@ export default function Keyboard({
         setGuesses(newGuessesArray);
     }
 
-    const trySubmitGuess = () : void => {
-        if (currentGuessNum > 4) return;
-        if (currentLetterNum < 5) return;
+    const evaluateGuess = () : void => {
+        const solutionCopy = solution.map((letter)=>letter);
+        const greyMask = Array(5).fill(true);
 
+        // Check for greens
+        for (let i = 0; i < 5; ++i) {
+            if (guesses[currentGuessNum][i] === solutionCopy[i]) {
+                solutionCopy[i] = "";
+                greyMask[i] = false;
+                const guessLetter = document.getElementById(`guess${currentGuessNum}letter${i}`);
+                if (guessLetter !== null) {
+                    guessLetter.style.backgroundColor = "green";
+                }
+            }
+        }
+
+        // Check for yellow
+        for (let i = 0; i < 5; ++i) {
+            if (solutionCopy.includes(guesses[currentGuessNum][i])) {
+                greyMask[i] = false;
+                const guessLetter = document.getElementById(`guess${currentGuessNum}letter${i}`);
+                if (guessLetter !== null) {
+                    guessLetter.style.backgroundColor = "yellow";
+                }
+            }
+        }
+
+        // Color greys
+        for (let i = 0; i < 5; ++i) {
+            if (greyMask[i]) {
+                const guessLetter = document.getElementById(`guess${currentGuessNum}letter${i}`);
+                if (guessLetter !== null) {
+                    guessLetter.style.backgroundColor = "grey";
+                }
+            }
+        }
+
+    }
+
+    const trySubmitGuess = () : void => {
+        if (currentGuessNum > 5) return;
+        if (currentLetterNum < 5) return;
+        
+        evaluateGuess();
         setCurrentGuessNum(currentGuessNum + 1);
         setCurrentLetterNum(0);
     }
+
+
 
     useEffect( () => {
         const handleKeyPressEvent = (e: KeyboardEvent) => {

@@ -7,7 +7,7 @@ type LetterProps = {
 
 export default function Letter ({letterNum, guessNum, guesses}: LetterProps) {
     return (
-        <span className={styles.letter}>
+        <span className={styles.letter} id={`guess${guessNum}letter${letterNum}`}>
             {guesses[guessNum][letterNum]}
         </span>
     )
