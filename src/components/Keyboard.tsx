@@ -1,4 +1,6 @@
-import { useEffect } from 'react';
+import { ReactComponentElement, useEffect } from 'react';
+
+import { EvaluationRequestData, EvaluationResponseData } from '@/pages/api/evaluation';
 
 import Key from '@/components/Key';
 import SpacerKey from '@/components/SpacerKey';
@@ -51,41 +53,62 @@ export default function Keyboard({
     }
 
     const evaluateGuess = () : void => {
-        const solutionCopy = solution.map((letter)=>letter);
-        const greyMask = Array(5).fill(true);
+        const evalRequest : EvaluationRequestData = {
+            guess: guesses[currentGuessNum].join("")
+        }
+        console.log(JSON.stringify(evalRequest));
+        fetch("/api/evaluation", {
+            method: "POST",
+            headers: new Headers({
+                "Content-Type": "application/json"
+            }),
+            body: JSON.stringify(evalRequest)
+        })
+        .then(res => res.json())
+        .then((evaluation : EvaluationResponseData) => {
+            if (!evaluation.accepted) return;
+
+            for (let i = 0; i < 5; ++i) {
+                const letterId : string = `guess${currentGuessNum}letter${i}`;
+                const letterElement = document.getElementById(letterId);
+                if (letterElement !== null) {
+                    letterElement.style.backgroundColor = evaluation.colors[i];
+                } 
+            }
+        })
 
         // Check for greens
-        for (let i = 0; i < 5; ++i) {
-            if (guesses[currentGuessNum][i] === solutionCopy[i]) {
-                solutionCopy[i] = "";
-                greyMask[i] = false;
-                const guessLetter = document.getElementById(`guess${currentGuessNum}letter${i}`);
-                if (guessLetter !== null) {
-                    guessLetter.style.backgroundColor = "green";
-                }
-            }
-        }
+        // for (let i = 0; i < 5; ++i) {
+        //     if (guesses[currentGuessNum][i] === solutionCopy[i]) {
+        //         solutionCopy[i] = "";
+        //         greyMask[i] = false;
+        //         const guessLetter = document.getElementById(`guess${currentGuessNum}letter${i}`);
+        //         if (guessLetter !== null) {
+        //             guessLetter.style.backgroundColor = "green";
+        //         }
+        //     }
+        // }
 
-        // Check for yellow
-        for (let i = 0; i < 5; ++i) {
-            if (solutionCopy.includes(guesses[currentGuessNum][i])) {
-                greyMask[i] = false;
-                const guessLetter = document.getElementById(`guess${currentGuessNum}letter${i}`);
-                if (guessLetter !== null) {
-                    guessLetter.style.backgroundColor = "yellow";
-                }
-            }
-        }
+        // // Check for yellow
+        // for (let i = 0; i < 5; ++i) {
+        //     if (solutionCopy.includes(guesses[currentGuessNum][i])) {
+        //         greyMask[i] = false;
+        //         const guessLetter = document.getElementById(`guess${currentGuessNum}letter${i}`);
+        //         if (guessLetter !== null) {
+        //             guessLetter.style.backgroundColor = "yellow";
+        //         }
+        //     }
+        // }
 
-        // Color greys
-        for (let i = 0; i < 5; ++i) {
-            if (greyMask[i]) {
-                const guessLetter = document.getElementById(`guess${currentGuessNum}letter${i}`);
-                if (guessLetter !== null) {
-                    guessLetter.style.backgroundColor = "grey";
-                }
-            }
-        }
+        // // Color greys
+        // for (let i = 0; i < 5; ++i) {
+        //     if (greyMask[i]) {
+        //         const guessLetter = document.getElementById(`guess${currentGuessNum}letter${i}`);
+        //         if (guessLetter !== null) {
+        //             guessLetter.style.backgroundColor = "grey";
+        //         }
+        //     }
+        // }
 
     }
 
