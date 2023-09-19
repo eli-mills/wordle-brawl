@@ -20,15 +20,21 @@ const guessIsValid = (guess: string) : boolean => {
 }
 
 const evaluateGuess = (guess: string) : string[] => {
-    const colors : string[] = Array(5).fill("grey");
+    const colors : string[] = Array(5).fill("lightslategrey");
     const answer : string[] = "BAGEL".split("");         // TEMPORARY ANSWER, SHOULD RETRIEVE FROM DB //
 
+    // Green pass
     for (let i = 0; i < 5; ++i) {
         if (guess[i] === answer[i]) {
             colors[i] = "green";
             answer[i] = "";
-        } else if (answer.includes(guess[i])) {
-            colors[i] = "yellow";
+        }
+    }
+
+    // Yellow pass   
+    for (let i = 0; i < 5; ++i) {
+        if (answer.includes(guess[i])) {
+            colors[i] = "goldenrod";
             answer[answer.indexOf(guess[i])] = "";
         }
     }

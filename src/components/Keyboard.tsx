@@ -66,16 +66,22 @@ export default function Keyboard({
         })
         .then(res => res.json())
         .then((evaluation : EvaluationResponseData) => {
-            if (!evaluation.accepted) return;
+            if (evaluation.accepted) colorLetters(evaluation.colors);
+            
+        });
 
-            for (let i = 0; i < 5; ++i) {
-                const letterId : string = `guess${currentGuessNum}letter${i}`;
-                const letterElement = document.getElementById(letterId);
-                if (letterElement !== null) {
-                    letterElement.style.backgroundColor = evaluation.colors[i];
-                } 
-            }
-        })
+    const colorLetters = (colors : string[]) : void => {
+        for (let i = 0; i < 5; ++i) {
+            const letterId : string = `guess${currentGuessNum}letter${i}`;
+            const letterElement = document.getElementById(letterId);
+            if (letterElement !== null) {
+                letterElement.style.backgroundColor = colors[i];
+                const keyId : string = `key${letterElement.innerText}`;
+                const keyElement = document.getElementById(keyId);
+                if (keyElement !== null) keyElement.style.backgroundColor = colors[i];
+            } 
+        }
+    }
 
         // Check for greens
         // for (let i = 0; i < 5; ++i) {
