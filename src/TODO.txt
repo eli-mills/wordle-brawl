@@ -1,0 +1,1 @@
+[] Keyboard should only be colored in hierarchy: yellow overwrites grey, green overwrites yellow.

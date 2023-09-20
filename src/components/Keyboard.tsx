@@ -52,23 +52,22 @@ export default function Keyboard({
         setGuesses(newGuessesArray);
     }
 
-    const evaluateGuess = () : void => {
+    const evaluateGuess = async () : Promise<boolean> => {
         const evalRequest : EvaluationRequestData = {
             guess: guesses[currentGuessNum].join("")
         }
         console.log(JSON.stringify(evalRequest));
-        fetch("/api/evaluation", {
+        const res = await fetch("/api/evaluation", {
             method: "POST",
             headers: new Headers({
                 "Content-Type": "application/json"
             }),
             body: JSON.stringify(evalRequest)
         })
-        .then(res => res.json())
-        .then((evaluation : EvaluationResponseData) => {
-            if (evaluation.accepted) colorLetters(evaluation.colors);
-            
-        });
+        const evaluation : EvaluationResponseData = await res.json();
+        if (evaluation.accepted) colorLetters(evaluation.colors);
+        return evaluation.accepted;
+    }
 
     const colorLetters = (colors : string[]) : void => {
         for (let i = 0; i < 5; ++i) {
@@ -83,51 +82,15 @@ export default function Keyboard({
         }
     }
 
-        // Check for greens
-        // for (let i = 0; i < 5; ++i) {
-        //     if (guesses[currentGuessNum][i] === solutionCopy[i]) {
-        //         solutionCopy[i] = "";
-        //         greyMask[i] = false;
-        //         const guessLetter = document.getElementById(`guess${currentGuessNum}letter${i}`);
-        //         if (guessLetter !== null) {
-        //             guessLetter.style.backgroundColor = "green";
-        //         }
-        //     }
-        // }
-
-        // // Check for yellow
-        // for (let i = 0; i < 5; ++i) {
-        //     if (solutionCopy.includes(guesses[currentGuessNum][i])) {
-        //         greyMask[i] = false;
-        //         const guessLetter = document.getElementById(`guess${currentGuessNum}letter${i}`);
-        //         if (guessLetter !== null) {
-        //             guessLetter.style.backgroundColor = "yellow";
-        //         }
-        //     }
-        // }
-
-        // // Color greys
-        // for (let i = 0; i < 5; ++i) {
-        //     if (greyMask[i]) {
-        //         const guessLetter = document.getElementById(`guess${currentGuessNum}letter${i}`);
-        //         if (guessLetter !== null) {
-        //             guessLetter.style.backgroundColor = "grey";
-        //         }
-        //     }
-        // }
-
-    }
-
-    const trySubmitGuess = () : void => {
+    const trySubmitGuess = async () : Promise<void> => {
         if (currentGuessNum > 5) return;
         if (currentLetterNum < 5) return;
         
-        evaluateGuess();
-        setCurrentGuessNum(currentGuessNum + 1);
-        setCurrentLetterNum(0);
+        if (await evaluateGuess()) {
+            setCurrentGuessNum(currentGuessNum + 1);
+            setCurrentLetterNum(0);
+        }
     }
-
-
 
     useEffect( () => {
         const handleKeyPressEvent = (e: KeyboardEvent) => {
