@@ -11,53 +11,77 @@ export type EvaluationRequestData = {
     guess: string
 }
 
+type ColorData = {
+    guessColors: string[] | null,
+    keyColors: Record<string, string> | null
+}
+
 export type EvaluationResponseData = {
   accepted: boolean,
-  colors: string[]
+  guessColors: string[] | null,
+  keyColors: Record<string, string> | null
 }
 
-const guessIsValid = async (guess: string) : Promise<boolean> => {
-    const file = await fsPromises.open(path.join(process.cwd(),"src/data/wordle-answers-alphabetical.txt"));
-    try {
-        for await (const word of file.readLines()) {
-            if (word.toUpperCase() === guess) return true;
+interface WordValidator {
+    validateWord : (guess : string) => Promise<boolean>
+}
+
+class FileWordValidator implements WordValidator {
+    constructor (private readonly filePath : string) { }
+    validateWord = async (guess : string) => {
+        const file = await fsPromises.open(this.filePath);
+        try {
+            for await (const word of file.readLines()) {
+                if (word.toUpperCase() === guess) return true;
+            }
+            return false;
+
+        } finally {
+            file.close();
         }
-        return false;
-
-    } finally {
-        file.close();
-    }
+    };
 }
 
-const getColors = (guess : string) : string[] => {
-    const colors : string[] = Array(5).fill("lightslategrey");
-    const answer : string[] = "BAGEL".split("");         // TEMPORARY ANSWER, SHOULD RETRIEVE FROM DB //
+const getSolution = async () : Promise<string> => {
+    return "BAGEL";
+}
+
+const getColors = async (guess : string) : Promise<ColorData> => {
+    const guessColors : string[] = Array(5).fill("lightslategrey");
+    const keyColors : Record<string, string> = {};
+    const solution : string[] = (await getSolution()).split("");
 
     // Green pass
     for (let i = 0; i < 5; ++i) {
-        if (guess[i] === answer[i]) {
-            colors[i] = "green";
-            answer[i] = "";
+        keyColors[guess[i]] = "lightslategrey";
+        if (guess[i] === solution[i]) {
+            guessColors[i] = "green";
+            keyColors[guess[i]] = "green";
+            solution[i] = "";
         }
     }
 
     // Yellow pass   
     for (let i = 0; i < 5; ++i) {
-        if (answer.includes(guess[i])) {
-            colors[i] = "goldenrod";
-            answer[answer.indexOf(guess[i])] = "";
+        if (solution.includes(guess[i])) {
+            guessColors[i] = "goldenrod";
+            keyColors[guess[i]] = keyColors[guess[i]] !== "green" ? "goldenrod" : "green";
+            solution[solution.indexOf(guess[i])] = "";
         }
     }
 
-    return colors;
+    return { guessColors, keyColors };
 }
 
 const evaluateGuess = async (guess: string) : Promise<EvaluationResponseData> => {
-    const accepted : boolean = await guessIsValid(guess);
-    const colors : string[] = accepted ? getColors(guess) : Array(5).fill("");
+    const filePath : string = path.join(process.cwd(),"src/data/wordle-answers-alphabetical.txt");
+    const validator = new FileWordValidator(filePath);
+    const accepted : boolean = await validator.validateWord(guess);
+    const { guessColors, keyColors } = accepted ? await getColors(guess) : { guessColors: null, keyColors: null};
     return {
         accepted,
-        colors
+        guessColors,
+        keyColors
     }
 }
 

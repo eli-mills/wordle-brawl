@@ -1,4 +1,4 @@
-import { ReactComponentElement, useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { EvaluationRequestData, EvaluationResponseData } from '@/pages/api/evaluation';
 
@@ -18,8 +18,7 @@ type KeyboardProps = {
     currentGuessNum: number, 
     setCurrentGuessNum: (_: number) => void,
     currentLetterNum: number,
-    setCurrentLetterNum: (_: number) => void,
-    solution: string[]
+    setCurrentLetterNum: (_: number) => void
 }
 
 export default function Keyboard({
@@ -28,8 +27,7 @@ export default function Keyboard({
     currentGuessNum, 
     setCurrentGuessNum,
     currentLetterNum,
-    setCurrentLetterNum,
-    solution
+    setCurrentLetterNum
 }:KeyboardProps){
 
     const tryAppendLetterToGuess = (letter: string) : void => {
@@ -56,16 +54,18 @@ export default function Keyboard({
         const evalRequest : EvaluationRequestData = {
             guess: guesses[currentGuessNum].join("")
         }
-        console.log(JSON.stringify(evalRequest));
         const res = await fetch("/api/evaluation", {
             method: "POST",
             headers: new Headers({
                 "Content-Type": "application/json"
             }),
             body: JSON.stringify(evalRequest)
-        })
+        });
         const evaluation : EvaluationResponseData = await res.json();
-        if (evaluation.accepted) colorLetters(evaluation.colors);
+        if (evaluation.accepted) {
+            evaluation.guessColors && colorLetters(evaluation.guessColors);
+            evaluation.keyColors && colorKeys(evaluation.keyColors);
+        };
         return evaluation.accepted;
     }
 
@@ -75,10 +75,19 @@ export default function Keyboard({
             const letterElement = document.getElementById(letterId);
             if (letterElement !== null) {
                 letterElement.style.backgroundColor = colors[i];
-                const keyId : string = `key${letterElement.innerText}`;
-                const keyElement = document.getElementById(keyId);
-                if (keyElement !== null) keyElement.style.backgroundColor = colors[i];
             } 
+        }
+    }
+
+    const colorKeys = (keyColors : Record<string, string>) : void => {
+        for (const letter in keyColors) {
+            const keyId : string = `key${letter}`;
+            const keyElement = document.getElementById(keyId);
+            if (keyElement === null) continue;
+            
+            keyElement.style.backgroundColor = keyElement.style.backgroundColor === "green"
+                ? "green"
+                : keyColors[letter];
         }
     }
 
