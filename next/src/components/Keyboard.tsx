@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 
+import { EvaluationRequestData, EvaluationResponseData } from '@/pages/api/evaluation';
+
 import Key from '@/components/Key';
 import SpacerKey from '@/components/SpacerKey';
 import EnterKey from './EnterKey';
@@ -48,12 +50,55 @@ export default function Keyboard({
         setGuesses(newGuessesArray);
     }
 
-    const trySubmitGuess = () : void => {
-        if (currentGuessNum > 4) return;
-        if (currentLetterNum < 5) return;
+    const evaluateGuess = async () : Promise<boolean> => {
+        const evalRequest : EvaluationRequestData = {
+            guess: guesses[currentGuessNum].join("")
+        }
+        const res = await fetch("/api/evaluation", {
+            method: "POST",
+            headers: new Headers({
+                "Content-Type": "application/json"
+            }),
+            body: JSON.stringify(evalRequest)
+        });
+        const evaluation : EvaluationResponseData = await res.json();
+        if (evaluation.accepted) {
+            evaluation.guessColors && colorLetters(evaluation.guessColors);
+            evaluation.keyColors && colorKeys(evaluation.keyColors);
+        };
+        return evaluation.accepted;
+    }
 
-        setCurrentGuessNum(currentGuessNum + 1);
-        setCurrentLetterNum(0);
+    const colorLetters = (colors : string[]) : void => {
+        for (let i = 0; i < 5; ++i) {
+            const letterId : string = `guess${currentGuessNum}letter${i}`;
+            const letterElement = document.getElementById(letterId);
+            if (letterElement !== null) {
+                letterElement.style.backgroundColor = colors[i];
+            } 
+        }
+    }
+
+    const colorKeys = (keyColors : Record<string, string>) : void => {
+        for (const letter in keyColors) {
+            const keyId : string = `key${letter}`;
+            const keyElement = document.getElementById(keyId);
+            if (keyElement === null) continue;
+            
+            keyElement.style.backgroundColor = keyElement.style.backgroundColor === "green"
+                ? "green"
+                : keyColors[letter];
+        }
+    }
+
+    const trySubmitGuess = async () : Promise<void> => {
+        if (currentGuessNum > 5) return;
+        if (currentLetterNum < 5) return;
+        
+        if (await evaluateGuess()) {
+            setCurrentGuessNum(currentGuessNum + 1);
+            setCurrentLetterNum(0);
+        }
     }
 
     useEffect( () => {
