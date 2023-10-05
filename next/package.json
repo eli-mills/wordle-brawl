@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "dev-sock": "cd ../socket && tsc && node ../socket/server.js & cd ../next && npm run dev && fg"
   },
   "dependencies": {
     "@types/node": "20.4.0",
@@ -18,6 +19,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-simple-keyboard": "^3.6.30",
+    "socket.io-client": "^4.7.2",
     "typescript": "5.1.6"
   }
 }

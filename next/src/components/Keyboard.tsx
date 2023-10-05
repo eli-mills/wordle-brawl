@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-
+import { useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { EvaluationRequestData, EvaluationResponseData } from '@/pages/api/evaluation';
 
 import Key from '@/components/Key';
@@ -69,6 +69,20 @@ export default function Keyboard({
         return evaluation.accepted;
     }
 
+
+    // SOCKETS
+    
+
+    const handleEvaluation = (evaluation : EvaluationResponseData) => {
+        if (!evaluation.accepted) return;
+
+        evaluation.guessColors && colorLetters(evaluation.guessColors);
+        evaluation.keyColors && colorKeys(evaluation.keyColors);
+        setCurrentGuessNum(currentGuessNum + 1);
+        setCurrentLetterNum(0);
+    }
+
+
     const colorLetters = (colors : string[]) : void => {
         for (let i = 0; i < 5; ++i) {
             const letterId : string = `guess${currentGuessNum}letter${i}`;
@@ -94,12 +108,33 @@ export default function Keyboard({
     const trySubmitGuess = async () : Promise<void> => {
         if (currentGuessNum > 5) return;
         if (currentLetterNum < 5) return;
+        evaluateGuessSocket();
         
-        if (await evaluateGuess()) {
-            setCurrentGuessNum(currentGuessNum + 1);
-            setCurrentLetterNum(0);
-        }
+        // if (await evaluateGuess()) {
+        //     setCurrentGuessNum(currentGuessNum + 1);
+        //     setCurrentLetterNum(0);
+        // }
     }
+
+    const [socket, setSocket] = useState<any>();
+    const evaluateGuessSocket = () => {
+        const evalRequest : EvaluationRequestData = {
+            guess: guesses[currentGuessNum].join("")
+        }
+        if (socket) {
+            socket.emit("guess", evalRequest);
+        };
+    }
+
+    useEffect(()=>{
+        const socket = io("http://localhost:3001");
+        setSocket(socket);
+    }, []);
+
+    useEffect(() => {
+        socket && socket.on("evaluation", handleEvaluation);
+        return ()=> socket && socket.off("evaluation");
+    }, [socket, currentGuessNum]);
 
     useEffect( () => {
         const handleKeyPressEvent = (e: KeyboardEvent) => {
@@ -115,6 +150,7 @@ export default function Keyboard({
         window.addEventListener("keyup", handleKeyPressEvent);
         return () => window.removeEventListener("keyup", handleKeyPressEvent);
     }, [currentLetterNum, currentGuessNum]);
+
 
     return (
         <div className={styles.keyboard}>
