@@ -19,16 +19,14 @@ const io = new socket_io_1.Server(server, {
         methods: ["GET", "POST"]
     }
 });
-let socketConn;
 io.on('connection', (socket) => {
-    socketConn = socket;
     console.log('a user connected');
     socket.on('disconnect', () => console.log('user disconnected'));
-    socket.on("guess", handleGuessRequest);
-});
-const handleGuessRequest = (guessReq) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield (0, evaluation_1.evaluateGuess)(guessReq.guess);
-    io.emit("evaluation", result);
+    socket.on("guess", (guessReq) => __awaiter(void 0, void 0, void 0, function* () {
+        const result = yield (0, evaluation_1.evaluateGuess)(guessReq.guess);
+        socket.emit("evaluation", result);
+        socket.broadcast.emit("other-eval", result);
+    }));
 });
 server.listen(3001, () => {
     console.log('server running at http://localhost:3001');

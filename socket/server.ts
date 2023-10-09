@@ -10,19 +10,15 @@ const io = new Server(server, {
     }
 });
 
-let socketConn : Socket;
-
 io.on('connection', (socket) => {
-    socketConn = socket;
     console.log('a user connected');
     socket.on('disconnect', () => console.log('user disconnected'));
-    socket.on("guess", handleGuessRequest);
+    socket.on("guess", async (guessReq : EvaluationRequestData) => {
+        const result : EvaluationResponseData = await evaluateGuess(guessReq.guess);
+        socket.emit("evaluation", result);
+        socket.broadcast.emit("other-eval", result);
+    });
 });
-
-const handleGuessRequest = async (guessReq : EvaluationRequestData) => { 
-    const result : EvaluationResponseData = await evaluateGuess(guessReq.guess);
-    io.emit("evaluation", result);
-}
 
 server.listen(3001, () => {
     console.log('server running at http://localhost:3001');
