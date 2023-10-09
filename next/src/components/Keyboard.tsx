@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-
+import { useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { EvaluationRequestData, EvaluationResponseData } from '@/pages/api/evaluation';
 
 import Key from '@/components/Key';
@@ -30,6 +30,44 @@ export default function Keyboard({
     setCurrentLetterNum
 }:KeyboardProps){
 
+    /**************************************************** 
+     *                                                  *
+     *                  REACT STATE                     *
+     *                                                  *
+    ****************************************************/
+    const [socket, setSocket] = useState<any>();
+
+    useEffect(()=>{
+        const socket = io("http://localhost:3001");
+        setSocket(socket);
+    }, []);
+
+    useEffect(() => {
+        socket && socket.on("evaluation", handleEvaluation);
+        return ()=> socket && socket.off("evaluation"); // cleanup
+    }, [socket, currentGuessNum]);
+
+    useEffect( () => {
+        const handleKeyPressEvent = (e: KeyboardEvent) => {
+            const letters = "QWERTYUIOPASDFGHJKLZXCVBNM";
+            if (e.key === "Enter") {
+                trySubmitGuess();
+            } else if (e.key === "Backspace") {
+                tryRemoveLetterFromGuess();
+            } else if (letters.includes(e.key.toUpperCase())) {
+                tryAppendLetterToGuess(e.key.toUpperCase());
+            }
+        }
+        window.addEventListener("keyup", handleKeyPressEvent);
+        return () => window.removeEventListener("keyup", handleKeyPressEvent);
+    }, [currentLetterNum, currentGuessNum]);
+
+    /**************************************************** 
+     *                                                  *
+     *               BASIC KEYBOARD EVENTS              *
+     *                                                  *
+    ****************************************************/
+
     const tryAppendLetterToGuess = (letter: string) : void => {
         if (currentLetterNum > 4 || currentGuessNum > 5) return;
 
@@ -50,23 +88,33 @@ export default function Keyboard({
         setGuesses(newGuessesArray);
     }
 
-    const evaluateGuess = async () : Promise<boolean> => {
+    /**************************************************** 
+     *                                                  *
+     *                  GUESS EVALUATION                *
+     *                                                  *
+    ****************************************************/
+    const trySubmitGuess = async () : Promise<void> => {
+        if (currentGuessNum > 5) return;
+        if (currentLetterNum < 5) return;
+        evaluateGuess();
+    }
+    
+    const evaluateGuess = () => {
         const evalRequest : EvaluationRequestData = {
             guess: guesses[currentGuessNum].join("")
         }
-        const res = await fetch("/api/evaluation", {
-            method: "POST",
-            headers: new Headers({
-                "Content-Type": "application/json"
-            }),
-            body: JSON.stringify(evalRequest)
-        });
-        const evaluation : EvaluationResponseData = await res.json();
-        if (evaluation.accepted) {
-            evaluation.guessColors && colorLetters(evaluation.guessColors);
-            evaluation.keyColors && colorKeys(evaluation.keyColors);
+        if (socket) {
+            socket.emit("guess", evalRequest);
         };
-        return evaluation.accepted;
+    }
+
+    const handleEvaluation = (evaluation : EvaluationResponseData) => {
+        if (!evaluation.accepted) return;
+
+        evaluation.guessColors && colorLetters(evaluation.guessColors);
+        evaluation.keyColors && colorKeys(evaluation.keyColors);
+        setCurrentGuessNum(currentGuessNum + 1);
+        setCurrentLetterNum(0);
     }
 
     const colorLetters = (colors : string[]) : void => {
@@ -90,31 +138,6 @@ export default function Keyboard({
                 : keyColors[letter];
         }
     }
-
-    const trySubmitGuess = async () : Promise<void> => {
-        if (currentGuessNum > 5) return;
-        if (currentLetterNum < 5) return;
-        
-        if (await evaluateGuess()) {
-            setCurrentGuessNum(currentGuessNum + 1);
-            setCurrentLetterNum(0);
-        }
-    }
-
-    useEffect( () => {
-        const handleKeyPressEvent = (e: KeyboardEvent) => {
-            const letters = "QWERTYUIOPASDFGHJKLZXCVBNM";
-            if (e.key === "Enter") {
-                trySubmitGuess();
-            } else if (e.key === "Backspace") {
-                tryRemoveLetterFromGuess();
-            } else if (letters.includes(e.key.toUpperCase())) {
-                tryAppendLetterToGuess(e.key.toUpperCase());
-            }
-        }
-        window.addEventListener("keyup", handleKeyPressEvent);
-        return () => window.removeEventListener("keyup", handleKeyPressEvent);
-    }, [currentLetterNum, currentGuessNum]);
 
     return (
         <div className={styles.keyboard}>

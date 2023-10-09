@@ -1,0 +1,1 @@
+Word lists provided by Github user cfreshman at https://gist.github.com/cfreshman/dec102adb5e60a8299857cbf78f6cf57
