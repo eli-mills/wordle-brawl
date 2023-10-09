@@ -28,7 +28,7 @@ io.on('connection', (socket) => {
 });
 const handleGuessRequest = (guessReq) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield (0, evaluation_1.evaluateGuess)(guessReq.guess);
-    socketConn.emit("evaluation", result);
+    io.emit("evaluation", result);
 });
 server.listen(3001, () => {
     console.log('server running at http://localhost:3001');

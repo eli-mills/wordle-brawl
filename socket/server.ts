@@ -21,7 +21,7 @@ io.on('connection', (socket) => {
 
 const handleGuessRequest = async (guessReq : EvaluationRequestData) => { 
     const result : EvaluationResponseData = await evaluateGuess(guessReq.guess);
-    socketConn.emit("evaluation", result);
+    io.emit("evaluation", result);
 }
 
 server.listen(3001, () => {

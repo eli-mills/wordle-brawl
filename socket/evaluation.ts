@@ -68,7 +68,7 @@ const getColors = async (guess : string) : Promise<ColorData> => {
 }
 
 export const evaluateGuess = async (guess: string) : Promise<EvaluationResponseData> => {
-    const filePath : string = path.join(process.cwd(),"data/wordle-answers-alphabetical.txt");
+    const filePath : string = path.join(process.cwd(),"data/allowed.txt");
     const validator = new FileWordValidator(filePath);
     const accepted : boolean = await validator.validateWord(guess);
     const { guessColors, keyColors } = accepted ? await getColors(guess) : { guessColors: null, keyColors: null};

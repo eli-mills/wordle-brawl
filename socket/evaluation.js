@@ -80,7 +80,7 @@ const getColors = (guess) => __awaiter(void 0, void 0, void 0, function* () {
     return { guessColors, keyColors };
 });
 const evaluateGuess = (guess) => __awaiter(void 0, void 0, void 0, function* () {
-    const filePath = path_1.default.join(process.cwd(), "data/wordle-answers-alphabetical.txt");
+    const filePath = path_1.default.join(process.cwd(), "data/allowed.txt");
     const validator = new FileWordValidator(filePath);
     const accepted = yield validator.validateWord(guess);
     const { guessColors, keyColors } = accepted ? yield getColors(guess) : { guessColors: null, keyColors: null };
