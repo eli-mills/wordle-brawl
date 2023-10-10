@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "redis": "^4.6.10",
     "socket.io": "^4.7.2"
   },
   "devDependencies": {

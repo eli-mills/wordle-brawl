@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useEffect } from 'react';
+import { Socket } from 'socket.io-client';
 import { EvaluationRequestData, EvaluationResponseData } from '@/pages/api/evaluation';
 
 import Key from '@/components/Key';
@@ -13,6 +13,7 @@ const secondRow: string[] = ["A", "S", "D", "F", "G", "H", "J", "K", "L"];
 const thirdRow: string[] = ["Z", "X", "C", "V", "B", "N", "M"];
 
 type KeyboardProps = {
+    socket: Socket | undefined,
     guesses: string[][],
     setGuesses: (_: string[][]) => void,
     currentGuessNum: number, 
@@ -22,6 +23,7 @@ type KeyboardProps = {
 }
 
 export default function Keyboard({
+    socket,
     guesses,
     setGuesses,
     currentGuessNum, 
@@ -35,38 +37,32 @@ export default function Keyboard({
      *                  REACT STATE                     *
      *                                                  *
     ****************************************************/
-    const [socket, setSocket] = useState<any>();
-
-    useEffect(()=>{
-        const socket = io("http://localhost:3001");
-        setSocket(socket);
-    }, []);
 
     useEffect(() => {
         socket && socket.on("evaluation", handleEvaluation);
-        return ()=> socket && socket.off("evaluation"); // cleanup
+        return () => {socket && socket.off("evaluation")}; // cleanup
     }, [socket, currentGuessNum]);
 
     useEffect( () => {
-        const handleKeyPressEvent = (e: KeyboardEvent) => {
-            const letters = "QWERTYUIOPASDFGHJKLZXCVBNM";
-            if (e.key === "Enter") {
-                trySubmitGuess();
-            } else if (e.key === "Backspace") {
-                tryRemoveLetterFromGuess();
-            } else if (letters.includes(e.key.toUpperCase())) {
-                tryAppendLetterToGuess(e.key.toUpperCase());
-            }
-        }
         window.addEventListener("keyup", handleKeyPressEvent);
         return () => window.removeEventListener("keyup", handleKeyPressEvent);
-    }, [currentLetterNum, currentGuessNum]);
+    }, [socket, currentLetterNum, currentGuessNum]);
 
     /**************************************************** 
      *                                                  *
      *               BASIC KEYBOARD EVENTS              *
      *                                                  *
     ****************************************************/
+    const handleKeyPressEvent = (e: KeyboardEvent) => {
+        const letters = "QWERTYUIOPASDFGHJKLZXCVBNM";
+        if (e.key === "Enter") {
+            trySubmitGuess();
+        } else if (e.key === "Backspace") {
+            tryRemoveLetterFromGuess();
+        } else if (letters.includes(e.key.toUpperCase())) {
+            tryAppendLetterToGuess(e.key.toUpperCase());
+        }
+    }
 
     const tryAppendLetterToGuess = (letter: string) : void => {
         if (currentLetterNum > 4 || currentGuessNum > 5) return;
@@ -104,6 +100,7 @@ export default function Keyboard({
             guess: guesses[currentGuessNum].join("")
         }
         if (socket) {
+            console.log("emitting guess");
             socket.emit("guess", evalRequest);
         };
     }

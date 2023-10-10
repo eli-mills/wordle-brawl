@@ -11,7 +11,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const http_1 = require("http");
 const socket_io_1 = require("socket.io");
+const redis_1 = require("redis");
 const evaluation_1 = require("./evaluation");
+// Configure redis client
+const redisClient = (0, redis_1.createClient)({
+    url: "redis://127.0.0.1:6379"
+});
+redisClient.on("error", err => console.error("Redis client error", err));
+redisClient.connect();
+// Configure socketio server
 const server = (0, http_1.createServer)();
 const io = new socket_io_1.Server(server, {
     cors: {
@@ -22,10 +30,25 @@ const io = new socket_io_1.Server(server, {
 io.on('connection', (socket) => {
     console.log('a user connected');
     socket.on('disconnect', () => console.log('user disconnected'));
+    socket.on("declare-name", (name) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!redisClient.isReady)
+            yield redisClient.connect();
+        console.log(`Name received: ${name}. Writing to db.`);
+        redisClient.set(socket.id, name);
+    }));
     socket.on("guess", (guessReq) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Guess received: ${guessReq.guess}`);
+        // Get socket's name
+        if (!redisClient.isReady)
+            yield redisClient.connect();
+        const guesserName = yield redisClient.get(socket.id);
+        console.log(`Guesser name retrieved: ${guesserName}`);
+        // Evaluate result
         const result = yield (0, evaluation_1.evaluateGuess)(guessReq.guess);
+        // Send results
+        console.log("Sending results");
         socket.emit("evaluation", result);
-        socket.broadcast.emit("other-eval", result);
+        socket.broadcast.emit("other-eval", Object.assign({ guesserName }, result));
     }));
 });
 server.listen(3001, () => {
