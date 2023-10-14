@@ -9,13 +9,9 @@ type OpponentPanelArgs = {
 export default function OpponentPanel({socket}: OpponentPanelArgs) {
     const [opponentList, setOpponentList] = useState<string[]>([]);
     useEffect( () => {
-        socket && socket.on(GameEvents.ADD_NAME, handleAddName);
-        return () => {socket && socket.off(GameEvents.ADD_NAME, handleAddName)};
+        socket && socket.on(GameEvents.UPDATE_NAME_LIST, (updatedList: string[]) => {console.log("received updated list"); setOpponentList(updatedList)});
+        return () => {socket && socket.off(GameEvents.UPDATE_NAME_LIST)};
     }, [socket, opponentList]);
-
-    const handleAddName = (name : string) => {
-        setOpponentList([...opponentList, name]);
-    }
 
     return (
         <div>
