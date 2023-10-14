@@ -27,16 +27,26 @@ const io = new socket_io_1.Server(server, {
         methods: ["GET", "POST"]
     }
 });
+// Add event listeners to socket
 io.on('connection', (socket) => {
     console.log('a user connected');
-    socket.on('disconnect', () => console.log('user disconnected'));
-    socket.on("declare-name", (name) => __awaiter(void 0, void 0, void 0, function* () {
+    socket.on('disconnect', onDisconnect);
+    socket.on("declare-name", (name) => onDeclareName(socket, name));
+    socket.on("guess", (guessReq) => onGuess(socket, guessReq));
+});
+// Define event listeners
+function onDisconnect() { console.log("user disconnected"); }
+function onDeclareName(socket, name) {
+    return __awaiter(this, void 0, void 0, function* () {
         if (!redisClient.isReady)
             yield redisClient.connect();
         console.log(`Name received: ${name}. Writing to db.`);
         redisClient.set(socket.id, name);
-    }));
-    socket.on("guess", (guessReq) => __awaiter(void 0, void 0, void 0, function* () {
+        socket.broadcast.emit("add-name", name);
+    });
+}
+function onGuess(socket, guessReq) {
+    return __awaiter(this, void 0, void 0, function* () {
         console.log(`Guess received: ${guessReq.guess}`);
         // Get socket's name
         if (!redisClient.isReady)
@@ -49,8 +59,8 @@ io.on('connection', (socket) => {
         console.log("Sending results");
         socket.emit("evaluation", result);
         socket.broadcast.emit("other-eval", Object.assign({ guesserName }, result));
-    }));
-});
+    });
+}
 server.listen(3001, () => {
     console.log('server running at http://localhost:3001');
 });

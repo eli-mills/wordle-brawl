@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Socket } from 'socket.io-client';
-import { EvaluationRequestData, EvaluationResponseData } from '@/pages/api/evaluation';
+import { EvaluationRequestData, EvaluationResponseData } from '../../../common/evaluation-types';
+import * as GameEvents from "../../../common/game-events";
 
 import Key from '@/components/Key';
 import SpacerKey from '@/components/SpacerKey';
@@ -37,12 +38,13 @@ export default function Keyboard({
      *                  REACT STATE                     *
      *                                                  *
     ****************************************************/
-
+    // Socket listeners
     useEffect(() => {
-        socket && socket.on("evaluation", handleEvaluation);
-        return () => {socket && socket.off("evaluation")}; // cleanup
+        socket && socket.on(GameEvents.EVALUATION, handleEvaluation);
+        return () => {socket && socket.off(GameEvents.EVALUATION)}; // cleanup
     }, [socket, currentGuessNum]);
 
+    // Window listeners
     useEffect( () => {
         window.addEventListener("keyup", handleKeyPressEvent);
         return () => window.removeEventListener("keyup", handleKeyPressEvent);
@@ -101,7 +103,7 @@ export default function Keyboard({
         }
         if (socket) {
             console.log("emitting guess");
-            socket.emit("guess", evalRequest);
+            socket.emit(GameEvents.GUESS, evalRequest);
         };
     }
 

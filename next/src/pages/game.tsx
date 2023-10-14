@@ -1,6 +1,7 @@
 import Head from 'next/head'
 import NameModal from '@/components/NameModal'
 import GamePanel from '@/components/GamePanel'
+import OpponentPanel from '@/components/OpponentPanel'
 import { useState, useEffect } from 'react'
 import { io, Socket } from 'socket.io-client';
 
@@ -21,8 +22,8 @@ export default function Game() {
         </Head>
         <main>
             {displayModal && <NameModal socket={socket} setDisplayModal={setDisplayModal}/>}
-            <GamePanel socket={socket}/>
-            {/*<InfoPanel />*/}
+            {!displayModal && <GamePanel socket={socket}/>}
+            {!displayModal && <OpponentPanel socket={socket}/>}
         </main>
         </>
     )
