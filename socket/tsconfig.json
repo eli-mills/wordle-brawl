@@ -1,10 +1,9 @@
 {
     "extends": "@tsconfig/recommended/tsconfig.json",
     "files": [
-        "server.ts",
-        "evaluation.ts"
+        "server.ts"
     ],
     "compilerOptions": {
-        "typeRoots": ["node_modules/@types"]
-    },
+        "typeRoots": ["node_modules/@types"],
+    }
 }

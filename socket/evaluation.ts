@@ -1,20 +1,12 @@
 import { promises as fsPromises } from 'fs';
 import path from 'path';
-
-export type EvaluationRequestData = {
-    guess: string
-}
+import { EvaluationRequestData, EvaluationResponseData } from '../common/evaluation-types';
 
 type ColorData = {
     guessColors: string[] | null,
     keyColors: Record<string, string> | null
 }
 
-export type EvaluationResponseData = {
-  accepted: boolean,
-  guessColors: string[] | null,
-  keyColors: Record<string, string> | null
-}
 
 interface WordValidator {
     validateWord : (guess : string) => Promise<boolean>
