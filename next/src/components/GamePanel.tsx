@@ -1,13 +1,8 @@
 import { useState, useEffect } from 'react';
 import GuessGroup from '@/components/GuessGroup';
 import Keyboard from '@/components/Keyboard';
-import { Socket } from 'socket.io-client';
 
-type GamePanelArgs = {
-    socket: Socket | undefined
-}
-
-export default function GamePanel({socket}: GamePanelArgs) {
+export default function GamePanel() {
     const [guesses, setGuesses] = useState(
         [
             Array(5).fill(""),
@@ -25,7 +20,6 @@ export default function GamePanel({socket}: GamePanelArgs) {
     useEffect(()=>console.log(`new currentGuess: ${currentGuessNum}`), [currentGuessNum]);
     
     const keyboardProps = {
-        socket,
         guesses,
         setGuesses,
         currentGuessNum,

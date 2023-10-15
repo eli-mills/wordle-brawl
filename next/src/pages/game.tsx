@@ -1,19 +1,9 @@
 import Head from 'next/head'
-import NameModal from '@/components/NameModal'
 import GamePanel from '@/components/GamePanel'
 import OpponentPanel from '@/components/OpponentPanel'
-import { useState, useEffect } from 'react'
-import { io, Socket } from 'socket.io-client';
 
 
-export default function Game() {
-    const [socket, setSocket] = useState<Socket>();
-    const [displayModal, setDisplayModal] = useState<boolean>(true);
-
-    useEffect(()=>{
-        const socket = io("http://localhost:3001");
-        setSocket(socket);
-    }, []);
+export default function GamePage() {
 
     return (
         <>
@@ -21,9 +11,8 @@ export default function Game() {
             <title>Wordle WS</title>
         </Head>
         <main>
-            {displayModal && <NameModal socket={socket} setDisplayModal={setDisplayModal}/>}
-            {!displayModal && <GamePanel socket={socket}/>}
-            {!displayModal && <OpponentPanel socket={socket}/>}
+            <GamePanel/>
+            <OpponentPanel/>
         </main>
         </>
     )

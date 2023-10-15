@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Socket } from 'socket.io-client';
+import { useContext, useEffect } from 'react';
+import { GlobalContext } from '@/pages/_app';
 import { EvaluationRequestData, EvaluationResponseData } from '../../../common/evaluation-types';
 import * as GameEvents from "../../../common/game-events";
 
@@ -14,7 +14,6 @@ const secondRow: string[] = ["A", "S", "D", "F", "G", "H", "J", "K", "L"];
 const thirdRow: string[] = ["Z", "X", "C", "V", "B", "N", "M"];
 
 type KeyboardProps = {
-    socket: Socket | undefined,
     guesses: string[][],
     setGuesses: (_: string[][]) => void,
     currentGuessNum: number, 
@@ -24,7 +23,6 @@ type KeyboardProps = {
 }
 
 export default function Keyboard({
-    socket,
     guesses,
     setGuesses,
     currentGuessNum, 
@@ -38,6 +36,8 @@ export default function Keyboard({
      *                  REACT STATE                     *
      *                                                  *
     ****************************************************/
+    const { socket } = useContext(GlobalContext);
+    
     // Socket listeners
     useEffect(() => {
         socket && socket.on(GameEvents.EVALUATION, handleEvaluation);

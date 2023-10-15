@@ -1,15 +1,18 @@
 import Link from 'next/link';
 import Head from 'next/head'
-import GamePanel from '@/components/GamePanel'
+import { useState } from 'react';
+export default function HomePage() {
+    const [room, setRoom] = useState<string>();
 
-export default function Home() {
     return (
         <>
         <Head>
             <title>Wordle WS</title>
         </Head>
         <main>
-            <Link href={"/game"}>Start</Link>
+            <Link href={"/lobby"}>Create a Room</Link>
+            <input onChange={(e)=>setRoom(e.target.value)} type="text"/>
+            <Link href={{pathname: "/lobby", query: {room}}}>Join a Room</Link>
         </main>
         </>
     )
