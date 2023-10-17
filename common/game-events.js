@@ -1,12 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ROOM_DNE = exports.REQUEST_JOIN_ROOM = exports.NEW_ROOM_CREATED = exports.REQUEST_NEW_ROOM = exports.UPDATE_NAME_LIST = exports.OPP_EVALUATION = exports.EVALUATION = exports.GUESS = exports.DECLARE_NAME = void 0;
+exports.NO_ROOMS_AVAILABLE = exports.ROOM_DNE = exports.REQUEST_JOIN_ROOM = exports.NEW_ROOM_CREATED = exports.REQUEST_NEW_ROOM = exports.UPDATE_GAME_STATE = exports.OPP_EVALUATION = exports.EVALUATION = exports.GUESS = exports.DECLARE_NAME = void 0;
 exports.DECLARE_NAME = "declare-name";
 exports.GUESS = "guess";
 exports.EVALUATION = "evaluation";
 exports.OPP_EVALUATION = "opp-evaluation";
-exports.UPDATE_NAME_LIST = "update-name-list";
+exports.UPDATE_GAME_STATE = "update-game-state";
 exports.REQUEST_NEW_ROOM = "request-new-room";
 exports.NEW_ROOM_CREATED = "new-room-created";
 exports.REQUEST_JOIN_ROOM = "request-join-room";
 exports.ROOM_DNE = "room-dne";
+exports.NO_ROOMS_AVAILABLE = "no-rooms-available";

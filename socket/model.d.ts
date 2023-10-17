@@ -1,3 +1,9 @@
 export type Player = {
-    name: string
+    socketId: string
+    roomId: string
+    name?: string,
+}
+
+export type Room = {
+    roomId: string
 }
