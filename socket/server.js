@@ -83,8 +83,9 @@ function onCreateRoomRequest(socket) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         console.log("create room request received");
-        let [roomId] = (yield redisClient.sPop(availableRoomIds));
-        roomId = roomId.padStart(4, "0");
+        const roomIdList = (yield redisClient.sPop(availableRoomIds));
+        console.log(`Retrieved roomIDList: ${roomIdList}`);
+        const roomId = (typeof roomIdList === "string" ? roomIdList : roomIdList[0]).padStart(4, "0");
         console.log(`retrieved room number: ${roomId}`);
         if (roomId === undefined)
             return socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
@@ -173,8 +174,11 @@ function getPlayerKeyName(socketId) {
 }
 function populateAvailableRoomIds() {
     return __awaiter(this, void 0, void 0, function* () {
-        if (yield redisClient.exists(availableRoomIds))
+        if (yield redisClient.exists(availableRoomIds)) {
+            console.log("Not populating rooms");
             return;
+        }
+        console.log("Populating rooms");
         for (let i = 0; i < 10000; i++) {
             const roomId = i.toString().padStart(4, "0");
             yield redisClient.sAdd(availableRoomIds, roomId);
