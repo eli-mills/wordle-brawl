@@ -58,7 +58,6 @@ io.on('connection', (socket) => __awaiter(void 0, void 0, void 0, function* () {
     socket.on('disconnect', onDisconnect);
     socket.on(GameEvents.DECLARE_NAME, (name) => {
         onDeclareName(socket, name);
-        emitUpdatedNameList("room1");
     });
     socket.on(GameEvents.GUESS, (guessReq) => onGuess(socket, guessReq));
     socket.on(GameEvents.REQUEST_JOIN_ROOM, (data) => __awaiter(void 0, void 0, void 0, function* () {
@@ -71,17 +70,17 @@ function onDisconnect() { console.log("user disconnected"); }
 function onJoinRoomRequest(socket, roomId) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!io.sockets.adapter.rooms.has(roomId)) {
-            console.log(io.sockets.adapter.rooms);
-            console.log("Room does not exist");
+            console.log(`Room ${roomId} does not exist`);
             socket.emit(GameEvents.ROOM_DNE);
             return;
         }
         socket.join(roomId);
         yield createPlayer(socket.id, roomId);
-        yield emitUpdatedNameList(roomId);
+        yield emitUpdatedGameState(roomId);
     });
 }
 function onCreateRoomRequest(socket) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         console.log("create room request received");
         let [roomId] = (yield redisClient.sPop(availableRoomIds));
@@ -90,6 +89,8 @@ function onCreateRoomRequest(socket) {
         if (roomId === undefined)
             return socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
         socket.join(roomId);
+        const playerIds = (_a = io.of("/").adapter.rooms.get(roomId)) === null || _a === void 0 ? void 0 : _a.values();
+        console.log(`Just joined room ${roomId}: ${Array.from(playerIds !== null && playerIds !== void 0 ? playerIds : [])}`);
         yield createPlayer(socket.id, roomId);
         const gameStateData = {
             roomId,
@@ -101,9 +102,10 @@ function onCreateRoomRequest(socket) {
 function onDeclareName(socket, name) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(`Name received: ${name}. Writing to db.`);
-        yield updatePlayerName(socket.id, name);
-        yield addNameToRoom("room1", name);
-        yield emitUpdatedNameList("room1"); // "room1" temporary until rooms are implemented
+        const player = yield getPlayer(socket.id);
+        player.name = name;
+        yield updatePlayer(player);
+        yield emitUpdatedGameState(player.roomId);
     });
 }
 function onGuess(socket, guessReq) {
@@ -121,7 +123,7 @@ function onGuess(socket, guessReq) {
         socket.broadcast.emit(GameEvents.OPP_EVALUATION, oppResult);
     });
 }
-function emitUpdatedNameList(roomId) {
+function emitUpdatedGameState(roomId) {
     return __awaiter(this, void 0, void 0, function* () {
         const playerList = yield retrieveNamesFromRoom(roomId);
         const gameStateData = { roomId, playerList };
@@ -134,10 +136,15 @@ function createPlayer(socketId, roomId) {
         yield redisClient.hSet(getPlayerKeyName(socketId), newPlayer);
     });
 }
-function updatePlayerName(socketId, name) {
+function getPlayer(socketId) {
     return __awaiter(this, void 0, void 0, function* () {
-        const playerHashName = getPlayerKeyName(socketId);
-        yield redisClient.hSet(playerHashName, { name });
+        return yield redisClient.hGetAll(getPlayerKeyName(socketId));
+    });
+}
+function updatePlayer(player) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const playerHashName = getPlayerKeyName(player.socketId);
+        yield redisClient.hSet(playerHashName, player);
     });
 }
 function retrievePlayerName(socketId) {
@@ -145,21 +152,24 @@ function retrievePlayerName(socketId) {
         return yield redisClient.hGet(getPlayerKeyName(socketId), "name");
     });
 }
-function addNameToRoom(room, name) {
+function retrieveNamesFromRoom(roomId) {
+    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
-        yield redisClient.SADD(getRoomKeyName(room), name);
-    });
-}
-function retrieveNamesFromRoom(room) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return yield redisClient.SMEMBERS(getRoomKeyName(room));
+        const playerIds = io.sockets.adapter.rooms.get(roomId);
+        console.log(`Got the following player Ids for room ${roomId}: ${Array.from((_a = playerIds === null || playerIds === void 0 ? void 0 : playerIds.values()) !== null && _a !== void 0 ? _a : [])}`);
+        const playerList = [];
+        if (!playerIds)
+            return [];
+        for (const playerId of playerIds) {
+            const player = yield getPlayer(playerId);
+            playerList.push((_b = player.name) !== null && _b !== void 0 ? _b : "");
+        }
+        console.log(`Returning playerList: ${playerList}`);
+        return playerList;
     });
 }
 function getPlayerKeyName(socketId) {
     return `player:${socketId}`;
-}
-function getRoomKeyName(roomId) {
-    return `room:${roomId}`;
 }
 function populateAvailableRoomIds() {
     return __awaiter(this, void 0, void 0, function* () {

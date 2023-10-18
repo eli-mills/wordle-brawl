@@ -38,7 +38,6 @@ io.on('connection', async (socket) => {
     socket.on('disconnect', onDisconnect);
     socket.on(GameEvents.DECLARE_NAME, (name : string) => {
         onDeclareName(socket, name);
-        emitUpdatedNameList("room1");
     });
     socket.on(GameEvents.GUESS, (guessReq : EvaluationRequestData) => onGuess(socket, guessReq));
     socket.on(GameEvents.REQUEST_JOIN_ROOM, async (data: JoinRoomRequestData) => {
@@ -53,15 +52,14 @@ function onDisconnect () { console.log("user disconnected"); }
 
 async function onJoinRoomRequest (socket: Socket, roomId: string) {
     if (!io.sockets.adapter.rooms.has(roomId)) {
-        console.log(io.sockets.adapter.rooms);
-        console.log("Room does not exist");
+        console.log(`Room ${roomId} does not exist`);
         socket.emit(GameEvents.ROOM_DNE);
         return;
     }
 
     socket.join(roomId);
     await createPlayer(socket.id, roomId);
-    await emitUpdatedNameList(roomId);
+    await emitUpdatedGameState(roomId);
 }
 
 async function onCreateRoomRequest (socket: Socket) {
@@ -72,6 +70,8 @@ async function onCreateRoomRequest (socket: Socket) {
     if (roomId === undefined) return socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
 
     socket.join(roomId);
+    const playerIds = io.of("/").adapter.rooms.get(roomId)?.values();
+    console.log(`Just joined room ${roomId}: ${Array.from(playerIds ?? [])}`);
     await createPlayer(socket.id, roomId);
 
     const gameStateData: GameStateData = {
@@ -85,9 +85,10 @@ async function onCreateRoomRequest (socket: Socket) {
 async function onDeclareName (socket : Socket, name : string) {
     console.log(`Name received: ${name}. Writing to db.`);
 
-    await updatePlayerName(socket.id, name);
-    await addNameToRoom("room1", name);
-    await emitUpdatedNameList("room1");     // "room1" temporary until rooms are implemented
+    const player = await getPlayer(socket.id);
+    player.name = name;
+    await updatePlayer(player);
+    await emitUpdatedGameState(player.roomId);
 }
 
 async function onGuess ( socket : Socket, guessReq : EvaluationRequestData) {
@@ -107,8 +108,8 @@ async function onGuess ( socket : Socket, guessReq : EvaluationRequestData) {
     socket.broadcast.emit(GameEvents.OPP_EVALUATION, oppResult);
 }
 
-async function emitUpdatedNameList(roomId: string) : Promise<void> {
-    const playerList : string[] = await retrieveNamesFromRoom(roomId);
+async function emitUpdatedGameState(roomId: string) : Promise<void> {
+    const playerList = await retrieveNamesFromRoom(roomId);
     const gameStateData: GameStateData = {roomId, playerList}
     io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData);
 }
@@ -118,29 +119,37 @@ async function createPlayer(socketId: string, roomId: string) : Promise<void> {
     await redisClient.hSet(getPlayerKeyName(socketId), newPlayer);
 }
 
-async function updatePlayerName(socketId: string, name: string) : Promise<void> {
-    const playerHashName : string = getPlayerKeyName(socketId);
-    await redisClient.hSet(playerHashName, { name });
+async function getPlayer(socketId: string) : Promise<Player> {
+    return await redisClient.hGetAll(getPlayerKeyName(socketId)) as Player;
+}
+
+async function updatePlayer(player: Player) : Promise<void> {
+    const playerHashName : string = getPlayerKeyName(player.socketId);
+    await redisClient.hSet(playerHashName, player);
 }
 
 async function retrievePlayerName(socketId: string) : Promise<string | undefined> {
     return await redisClient.hGet(getPlayerKeyName(socketId), "name");
 }
 
-async function addNameToRoom(room: string, name: string) : Promise<void> {
-    await redisClient.SADD(getRoomKeyName(room), name);
-}
+async function retrieveNamesFromRoom(roomId: string) : Promise<string[]> {
+    const playerIds: Set<string> | undefined = io.sockets.adapter.rooms.get(roomId);
+    console.log(`Got the following player Ids for room ${roomId}: ${Array.from(playerIds?.values() ?? [])}`);
+    const playerList: string[] = [];
 
-async function retrieveNamesFromRoom(room: string) : Promise<string[]> {
-    return await redisClient.SMEMBERS(getRoomKeyName(room))
+    if (!playerIds) return [];
+
+    for (const playerId of playerIds) {
+        const player: Player = await getPlayer(playerId);
+        playerList.push(player.name ?? "");
+    }
+
+    console.log(`Returning playerList: ${playerList}`);
+    return playerList
 }
 
 function getPlayerKeyName(socketId: string) : string {
     return `player:${socketId}`;
-}
-
-function getRoomKeyName(roomId: string) : string {
-    return `room:${roomId}`;
 }
 
 

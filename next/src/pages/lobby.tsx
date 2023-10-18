@@ -55,7 +55,7 @@ export default function LobbyPage() {
             <main>
                 <h1>Room {room}</h1>
                 <ul>
-                    {opponentList.map(name => <li>{name}</li>)}
+                    {opponentList.map((name, index) => <li key={index}>{name}</li>)}
                 </ul>
                 {displayModal && <NameModal socket={socket} setDisplayModal={setDisplayModal}/>}
                 <Link href={"/game"}>Start Game</Link>
