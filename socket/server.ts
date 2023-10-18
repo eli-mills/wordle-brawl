@@ -35,7 +35,7 @@ io.on('connection', async (socket) => {
     console.log('a user connected');
     
     // Add event listeners to socket
-    socket.on('disconnect', onDisconnect);
+    socket.on('disconnecting', () => onDisconnect(socket));
     socket.on(GameEvents.DECLARE_NAME, (name : string) => {
         onDeclareName(socket, name);
     });
@@ -48,9 +48,21 @@ io.on('connection', async (socket) => {
 });
 
 // Define event listeners
-function onDisconnect () { console.log("user disconnected"); }
+async function onDisconnect (socket: Socket) { 
+    console.log(`Player ${socket.id} disconnected`);
+    const rooms: Set<string> = socket.rooms;
+    if (rooms.size <= 0) return;
+    for (let room of rooms) {
+        const remainingConnections = io.of("/").adapter.rooms.get(room);
+        if (room !== socket.id && remainingConnections?.size === 1) {
+            console.log(`Return ${room} to available rooms list`);
+            await redisClient.sAdd(availableRoomIds, room);
+        }
+    }
+}
 
 async function onJoinRoomRequest (socket: Socket, roomId: string) {
+    console.log(`Received joinRoomRequest for room ${roomId}`);
     if (!io.sockets.adapter.rooms.has(roomId)) {
         console.log(`Room ${roomId} does not exist`);
         socket.emit(GameEvents.ROOM_DNE);
@@ -80,7 +92,7 @@ async function onCreateRoomRequest (socket: Socket) {
         playerList: []
     };
 
-    socket.emit(GameEvents.UPDATE_GAME_STATE, gameStateData);
+    socket.emit(GameEvents.NEW_ROOM_CREATED, gameStateData);
 }
 
 async function onDeclareName (socket : Socket, name : string) {
@@ -155,7 +167,7 @@ function getPlayerKeyName(socketId: string) : string {
 
 
 async function populateAvailableRoomIds () {
-    if (await redisClient.exists(availableRoomIds)) {
+    if (await redisClient.exists(availableRoomIds) && await redisClient.sCard(availableRoomIds) === 10000) {
         console.log("Not populating rooms");
         return;
     }

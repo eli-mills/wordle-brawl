@@ -55,7 +55,7 @@ const io = new socket_io_1.Server(server, {
 io.on('connection', (socket) => __awaiter(void 0, void 0, void 0, function* () {
     console.log('a user connected');
     // Add event listeners to socket
-    socket.on('disconnect', onDisconnect);
+    socket.on('disconnecting', () => onDisconnect(socket));
     socket.on(GameEvents.DECLARE_NAME, (name) => {
         onDeclareName(socket, name);
     });
@@ -66,9 +66,24 @@ io.on('connection', (socket) => __awaiter(void 0, void 0, void 0, function* () {
     socket.on(GameEvents.REQUEST_NEW_ROOM, () => __awaiter(void 0, void 0, void 0, function* () { return yield onCreateRoomRequest(socket); }));
 }));
 // Define event listeners
-function onDisconnect() { console.log("user disconnected"); }
+function onDisconnect(socket) {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log(`Player ${socket.id} disconnected`);
+        const rooms = socket.rooms;
+        if (rooms.size <= 0)
+            return;
+        for (let room of rooms) {
+            const remainingConnections = io.of("/").adapter.rooms.get(room);
+            if (room !== socket.id && (remainingConnections === null || remainingConnections === void 0 ? void 0 : remainingConnections.size) === 1) {
+                console.log(`Return ${room} to available rooms list`);
+                yield redisClient.sAdd(availableRoomIds, room);
+            }
+        }
+    });
+}
 function onJoinRoomRequest(socket, roomId) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log(`Received joinRoomRequest for room ${roomId}`);
         if (!io.sockets.adapter.rooms.has(roomId)) {
             console.log(`Room ${roomId} does not exist`);
             socket.emit(GameEvents.ROOM_DNE);
@@ -97,7 +112,7 @@ function onCreateRoomRequest(socket) {
             roomId,
             playerList: []
         };
-        socket.emit(GameEvents.UPDATE_GAME_STATE, gameStateData);
+        socket.emit(GameEvents.NEW_ROOM_CREATED, gameStateData);
     });
 }
 function onDeclareName(socket, name) {
@@ -174,7 +189,7 @@ function getPlayerKeyName(socketId) {
 }
 function populateAvailableRoomIds() {
     return __awaiter(this, void 0, void 0, function* () {
-        if (yield redisClient.exists(availableRoomIds)) {
+        if ((yield redisClient.exists(availableRoomIds)) && (yield redisClient.sCard(availableRoomIds)) === 10000) {
             console.log("Not populating rooms");
             return;
         }
