@@ -22,6 +22,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.evaluateGuess = void 0;
 const fs_1 = require("fs");
 const path_1 = __importDefault(require("path"));
+const evaluation_types_1 = require("../common/evaluation-types");
 class FileWordValidator {
     constructor(filePath) {
         this.filePath = filePath;
@@ -57,23 +58,23 @@ const getSolution = () => __awaiter(void 0, void 0, void 0, function* () {
     return "BAGEL";
 });
 const getColors = (guess) => __awaiter(void 0, void 0, void 0, function* () {
-    const guessColors = Array(5).fill("lightslategrey");
+    const guessColors = Array(5).fill(evaluation_types_1.Color.Grey);
     const keyColors = {};
     const solution = (yield getSolution()).split("");
     // Green pass
     for (let i = 0; i < 5; ++i) {
-        keyColors[guess[i]] = "lightslategrey";
+        keyColors[guess[i]] = evaluation_types_1.Color.Grey;
         if (guess[i] === solution[i]) {
-            guessColors[i] = "green";
-            keyColors[guess[i]] = "green";
+            guessColors[i] = evaluation_types_1.Color.Green;
+            keyColors[guess[i]] = evaluation_types_1.Color.Green;
             solution[i] = "";
         }
     }
     // Yellow pass   
     for (let i = 0; i < 5; ++i) {
         if (solution.includes(guess[i])) {
-            guessColors[i] = "goldenrod";
-            keyColors[guess[i]] = keyColors[guess[i]] !== "green" ? "goldenrod" : "green";
+            guessColors[i] = evaluation_types_1.Color.Yellow;
+            keyColors[guess[i]] = keyColors[guess[i]] !== evaluation_types_1.Color.Green ? evaluation_types_1.Color.Yellow : evaluation_types_1.Color.Green;
             solution[solution.indexOf(guess[i])] = "";
         }
     }
@@ -83,7 +84,7 @@ const evaluateGuess = (guess) => __awaiter(void 0, void 0, void 0, function* () 
     const filePath = path_1.default.join(process.cwd(), "data/allowed.txt");
     const validator = new FileWordValidator(filePath);
     const accepted = yield validator.validateWord(guess);
-    const { guessColors, keyColors } = accepted ? yield getColors(guess) : { guessColors: null, keyColors: null };
+    const { guessColors, keyColors } = accepted ? yield getColors(guess) : { guessColors: [], keyColors: {} };
     return {
         accepted,
         guessColors,

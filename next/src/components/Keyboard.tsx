@@ -2,6 +2,7 @@ import { useContext, useEffect } from 'react';
 import { GlobalContext } from '@/pages/_app';
 import { EvaluationRequestData, EvaluationResponseData } from '../../../common/evaluation-types';
 import * as GameEvents from "../../../common/game-events";
+import { Color } from '../../../common/evaluation-types';
 
 import Key from '@/components/Key';
 import SpacerKey from '@/components/SpacerKey';
@@ -12,6 +13,12 @@ import styles from '@/styles/Keyboard.module.css';
 const firstRow: string[] = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"];
 const secondRow: string[] = ["A", "S", "D", "F", "G", "H", "J", "K", "L"];
 const thirdRow: string[] = ["Z", "X", "C", "V", "B", "N", "M"];
+
+const colorTable = new Map<Color, string> ([
+    [Color.Green, "green"],
+    [Color.Yellow, "goldenrod"],
+    [Color.Grey, "lightslategrey"]
+]);
 
 type KeyboardProps = {
     guesses: string[][],
@@ -116,17 +123,18 @@ export default function Keyboard({
         setCurrentLetterNum(0);
     }
 
-    const colorLetters = (colors : string[]) : void => {
-        for (let i = 0; i < 5; ++i) {
+    const colorLetters = (colors : Color[]) : void => {
+        for (let i = 0; i < colors.length; ++i) {
             const letterId : string = `guess${currentGuessNum}letter${i}`;
             const letterElement = document.getElementById(letterId);
+
             if (letterElement !== null) {
-                letterElement.style.backgroundColor = colors[i];
+                letterElement.style.backgroundColor = colorTable.get(colors[i]) ?? "";
             } 
         }
     }
 
-    const colorKeys = (keyColors : Record<string, string>) : void => {
+    const colorKeys = (keyColors : Record<string, Color>) : void => {
         for (const letter in keyColors) {
             const keyId : string = `key${letter}`;
             const keyElement = document.getElementById(keyId);
@@ -134,7 +142,7 @@ export default function Keyboard({
             
             keyElement.style.backgroundColor = keyElement.style.backgroundColor === "green"
                 ? "green"
-                : keyColors[letter];
+                : colorTable.get(keyColors[letter]) ?? "";
         }
     }
 

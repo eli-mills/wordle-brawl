@@ -25,7 +25,7 @@ redisClient.on("error", err => console.error("Redis client error", err));
 const server = createServer();
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:3000",
+        origin: "http://eli.local:3000",
         methods: ["GET", "POST"]
     }
 });
@@ -108,7 +108,7 @@ async function onGuess ( socket : Socket, guessReq : EvaluationRequestData) {
     console.log(`Guess received: ${guessReq.guess}`);
 
     // Get socket's name
-    const playerName : string | undefined = await retrievePlayerName(socket.id);
+    const playerName : string = await retrievePlayerName(socket.id);
     console.log(`Guesser name retrieved: ${playerName}`);
 
     // Evaluate result
@@ -141,8 +141,8 @@ async function updatePlayer(player: Player) : Promise<void> {
     await redisClient.hSet(playerHashName, player);
 }
 
-async function retrievePlayerName(socketId: string) : Promise<string | undefined> {
-    return await redisClient.hGet(getPlayerKeyName(socketId), "name");
+async function retrievePlayerName(socketId: string) : Promise<string> {
+    return await redisClient.hGet(getPlayerKeyName(socketId), "name") ?? "";
 }
 
 async function retrieveNamesFromRoom(roomId: string) : Promise<string[]> {

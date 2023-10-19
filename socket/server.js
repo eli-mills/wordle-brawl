@@ -47,7 +47,7 @@ redisClient.on("error", err => console.error("Redis client error", err));
 const server = (0, http_1.createServer)();
 const io = new socket_io_1.Server(server, {
     cors: {
-        origin: "http://localhost:3000",
+        origin: "http://eli.local:3000",
         methods: ["GET", "POST"]
     }
 });
@@ -164,8 +164,9 @@ function updatePlayer(player) {
     });
 }
 function retrievePlayerName(socketId) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        return yield redisClient.hGet(getPlayerKeyName(socketId), "name");
+        return (_a = yield redisClient.hGet(getPlayerKeyName(socketId), "name")) !== null && _a !== void 0 ? _a : "";
     });
 }
 function retrieveNamesFromRoom(roomId) {

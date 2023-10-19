@@ -14,7 +14,7 @@ export default function HomePage() {
     const router = useRouter();
 
     useEffect( () => {
-        const socket = io("http://localhost:3001");
+        const socket = io("http://eli.local:3001");
         setSocket(socket);
         socket.on(GameEvents.NEW_ROOM_CREATED, (data: GameStateData) => {
             router.push(`/lobby?room=${data.roomId}`);

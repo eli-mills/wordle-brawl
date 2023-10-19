@@ -1,11 +1,6 @@
 import { promises as fsPromises } from 'fs';
 import path from 'path';
-import { EvaluationRequestData, EvaluationResponseData } from '../common/evaluation-types';
-
-type ColorData = {
-    guessColors: string[] | null,
-    keyColors: Record<string, string> | null
-}
+import { EvaluationRequestData, EvaluationResponseData, Color, ColorData } from '../common/evaluation-types';
 
 
 interface WordValidator {
@@ -33,16 +28,16 @@ const getSolution = async () : Promise<string> => {
 }
 
 const getColors = async (guess : string) : Promise<ColorData> => {
-    const guessColors : string[] = Array(5).fill("lightslategrey");
-    const keyColors : Record<string, string> = {};
+    const guessColors : Color[] = Array(5).fill(Color.Grey);
+    const keyColors : Record<string, Color> = {};
     const solution : string[] = (await getSolution()).split("");
 
     // Green pass
     for (let i = 0; i < 5; ++i) {
-        keyColors[guess[i]] = "lightslategrey";
+        keyColors[guess[i]] = Color.Grey;
         if (guess[i] === solution[i]) {
-            guessColors[i] = "green";
-            keyColors[guess[i]] = "green";
+            guessColors[i] = Color.Green;
+            keyColors[guess[i]] = Color.Green;
             solution[i] = "";
         }
     }
@@ -50,8 +45,8 @@ const getColors = async (guess : string) : Promise<ColorData> => {
     // Yellow pass   
     for (let i = 0; i < 5; ++i) {
         if (solution.includes(guess[i])) {
-            guessColors[i] = "goldenrod";
-            keyColors[guess[i]] = keyColors[guess[i]] !== "green" ? "goldenrod" : "green";
+            guessColors[i] = Color.Yellow;
+            keyColors[guess[i]] = keyColors[guess[i]] !== Color.Green ? Color.Yellow : Color.Green;
             solution[solution.indexOf(guess[i])] = "";
         }
     }
@@ -63,7 +58,7 @@ export const evaluateGuess = async (guess: string) : Promise<EvaluationResponseD
     const filePath : string = path.join(process.cwd(),"data/allowed.txt");
     const validator = new FileWordValidator(filePath);
     const accepted : boolean = await validator.validateWord(guess);
-    const { guessColors, keyColors } = accepted ? await getColors(guess) : { guessColors: null, keyColors: null};
+    const { guessColors, keyColors } = accepted ? await getColors(guess) : { guessColors: [], keyColors: {}};
     return {
         accepted,
         guessColors,
