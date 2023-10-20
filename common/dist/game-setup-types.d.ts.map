@@ -1,0 +1,1 @@
+{"version":3,"file":"game-setup-types.d.ts","sourceRoot":"","sources":["../game-setup-types.ts"],"names":[],"mappings":"AAAA,MAAM,MAAM,mBAAmB,GAAG;IAC9B,IAAI,EAAE,MAAM,CAAA;CACf,CAAA;AAED,MAAM,MAAM,aAAa,GAAG;IACxB,MAAM,EAAE,MAAM,CAAC;IACf,UAAU,EAAE,MAAM,EAAE,CAAA;CACvB,CAAA"}

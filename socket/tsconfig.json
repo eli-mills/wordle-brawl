@@ -1,9 +1,19 @@
 {
-    "extends": "@tsconfig/recommended/tsconfig.json",
-    "files": [
-        "server.ts"
-    ],
     "compilerOptions": {
-        "typeRoots": ["node_modules/@types"]
-    }
+        "target": "es6",
+        "module": "es2015",
+        "moduleResolution": "node",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "typeRoots": ["node_modules/@types"],
+        "outDir": "./dist",
+      },
+    "files": [
+        "./src/server.ts"
+    ],
+    "references": [
+        { "path":  "../common"}
+    ]
 }

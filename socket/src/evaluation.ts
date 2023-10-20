@@ -1,6 +1,7 @@
 import { promises as fsPromises } from 'fs';
 import path from 'path';
-import { EvaluationRequestData, EvaluationResponseData, Color, ColorData } from '../common/evaluation-types';
+import { EvaluationRequestData, EvaluationResponseData, ColorData } from '../../common/dist/evaluation-types';
+import { Color } from '../../common/dist/evaluation-types.js';
 
 
 interface WordValidator {

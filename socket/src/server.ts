@@ -5,10 +5,10 @@ import {
     EvaluationRequestData, 
     EvaluationResponseData,  
     OpponentEvaluationResponseData,
-} from "../common/evaluation-types" 
-import { GameStateData, JoinRoomRequestData } from "../common/game-setup-types"
-import * as GameEvents from "../common/game-events";
-import { evaluateGuess } from "./evaluation";
+} from "../../common/src/evaluation-types" 
+import { GameStateData, JoinRoomRequestData } from "../../common/dist/game-setup-types"
+import * as GameEvents from "../../common/dist/game-events.js";
+import { evaluateGuess } from "./evaluation.js";
 import { Player, Room } from './model';
 
 const availableRoomIds: string = "availableRoomIds";

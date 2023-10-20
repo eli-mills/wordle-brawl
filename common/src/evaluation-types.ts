@@ -1,3 +1,9 @@
+export enum Color {
+    Green,
+    Yellow,
+    Grey
+}
+
 export type EvaluationRequestData = {
     guess: string
 }
@@ -13,11 +19,5 @@ export type EvaluationResponseData = ColorData & {
 
 export type OpponentEvaluationResponseData = EvaluationResponseData & {
     playerName: string
-}
-
-export enum Color {
-    Green,
-    Yellow,
-    Grey
 }
 

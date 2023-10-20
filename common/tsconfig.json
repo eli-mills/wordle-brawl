@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "composite": true,
+        "declaration": true,
+        "declarationMap": true,
+        "outDir": "dist"
+    },
+    "files": [
+        "src/evaluation-types.ts", 
+        "src/game-events.ts",
+        "src/game-setup-types.ts"
+    ]
+}

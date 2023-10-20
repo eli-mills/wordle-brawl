@@ -1,0 +1,11 @@
+export declare const DECLARE_NAME = "declare-name";
+export declare const GUESS = "guess";
+export declare const EVALUATION = "evaluation";
+export declare const OPP_EVALUATION = "opp-evaluation";
+export declare const UPDATE_GAME_STATE = "update-game-state";
+export declare const REQUEST_NEW_ROOM = "request-new-room";
+export declare const NEW_ROOM_CREATED = "new-room-created";
+export declare const REQUEST_JOIN_ROOM = "request-join-room";
+export declare const ROOM_DNE = "room-dne";
+export declare const NO_ROOMS_AVAILABLE = "no-rooms-available";
+//# sourceMappingURL=game-events.d.ts.map

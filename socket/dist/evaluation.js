@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -15,20 +14,15 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
     function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
     function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.evaluateGuess = void 0;
-const fs_1 = require("fs");
-const path_1 = __importDefault(require("path"));
-const evaluation_types_1 = require("../common/evaluation-types");
+import { promises as fsPromises } from 'fs';
+import path from 'path';
+import { Color } from '../../common/dist/evaluation-types.js';
 class FileWordValidator {
     constructor(filePath) {
         this.filePath = filePath;
         this.validateWord = (guess) => __awaiter(this, void 0, void 0, function* () {
             var _a, e_1, _b, _c;
-            const file = yield fs_1.promises.open(this.filePath);
+            const file = yield fsPromises.open(this.filePath);
             try {
                 try {
                     for (var _d = true, _e = __asyncValues(file.readLines()), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
@@ -58,30 +52,30 @@ const getSolution = () => __awaiter(void 0, void 0, void 0, function* () {
     return "BAGEL";
 });
 const getColors = (guess) => __awaiter(void 0, void 0, void 0, function* () {
-    const guessColors = Array(5).fill(evaluation_types_1.Color.Grey);
+    const guessColors = Array(5).fill(Color.Grey);
     const keyColors = {};
     const solution = (yield getSolution()).split("");
     // Green pass
     for (let i = 0; i < 5; ++i) {
-        keyColors[guess[i]] = evaluation_types_1.Color.Grey;
+        keyColors[guess[i]] = Color.Grey;
         if (guess[i] === solution[i]) {
-            guessColors[i] = evaluation_types_1.Color.Green;
-            keyColors[guess[i]] = evaluation_types_1.Color.Green;
+            guessColors[i] = Color.Green;
+            keyColors[guess[i]] = Color.Green;
             solution[i] = "";
         }
     }
     // Yellow pass   
     for (let i = 0; i < 5; ++i) {
         if (solution.includes(guess[i])) {
-            guessColors[i] = evaluation_types_1.Color.Yellow;
-            keyColors[guess[i]] = keyColors[guess[i]] !== evaluation_types_1.Color.Green ? evaluation_types_1.Color.Yellow : evaluation_types_1.Color.Green;
+            guessColors[i] = Color.Yellow;
+            keyColors[guess[i]] = keyColors[guess[i]] !== Color.Green ? Color.Yellow : Color.Green;
             solution[solution.indexOf(guess[i])] = "";
         }
     }
     return { guessColors, keyColors };
 });
-const evaluateGuess = (guess) => __awaiter(void 0, void 0, void 0, function* () {
-    const filePath = path_1.default.join(process.cwd(), "data/allowed.txt");
+export const evaluateGuess = (guess) => __awaiter(void 0, void 0, void 0, function* () {
+    const filePath = path.join(process.cwd(), "data/allowed.txt");
     const validator = new FileWordValidator(filePath);
     const accepted = yield validator.validateWord(guess);
     const { guessColors, keyColors } = accepted ? yield getColors(guess) : { guessColors: [], keyColors: {} };
@@ -91,4 +85,3 @@ const evaluateGuess = (guess) => __awaiter(void 0, void 0, void 0, function* () 
         keyColors
     };
 });
-exports.evaluateGuess = evaluateGuess;

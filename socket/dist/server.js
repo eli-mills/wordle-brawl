@@ -1,27 +1,3 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -31,21 +7,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-const http_1 = require("http");
-const socket_io_1 = require("socket.io");
-const redis_1 = require("redis");
-const GameEvents = __importStar(require("../common/game-events"));
-const evaluation_1 = require("./evaluation");
+import { createServer } from "http";
+import { Server } from 'socket.io';
+import { createClient } from 'redis';
+import * as GameEvents from "../../common/dist/game-events.js";
+import { evaluateGuess } from "./evaluation.js";
 const availableRoomIds = "availableRoomIds";
 // Configure redis client
-const redisClient = (0, redis_1.createClient)({
+const redisClient = createClient({
     url: "redis://127.0.0.1:6379"
 });
 redisClient.on("error", err => console.error("Redis client error", err));
 // Instantiate socket server
-const server = (0, http_1.createServer)();
-const io = new socket_io_1.Server(server, {
+const server = createServer();
+const io = new Server(server, {
     cors: {
         origin: "http://eli.local:3000",
         methods: ["GET", "POST"]
@@ -131,7 +106,7 @@ function onGuess(socket, guessReq) {
         const playerName = yield retrievePlayerName(socket.id);
         console.log(`Guesser name retrieved: ${playerName}`);
         // Evaluate result
-        const result = yield (0, evaluation_1.evaluateGuess)(guessReq.guess);
+        const result = yield evaluateGuess(guessReq.guess);
         const oppResult = Object.assign({ playerName }, result);
         // Send results
         console.log("Sending results");
