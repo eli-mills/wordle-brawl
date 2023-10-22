@@ -1,0 +1,10 @@
+export const DECLARE_NAME = "declare-name";
+export const GUESS = "guess";
+export const EVALUATION = "evaluation";
+export const OPP_EVALUATION = "opp-evaluation";
+export const UPDATE_GAME_STATE = "update-game-state";
+export const REQUEST_NEW_ROOM = "request-new-room";
+export const NEW_ROOM_CREATED = "new-room-created";
+export const REQUEST_JOIN_ROOM = "request-join-room";
+export const ROOM_DNE = "room-dne";
+export const NO_ROOMS_AVAILABLE = "no-rooms-available";

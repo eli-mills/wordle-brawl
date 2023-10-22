@@ -1,13 +1,13 @@
 {
     "compilerOptions": {
+        "target": "es6",
+        "module": "es2015",
+        "moduleResolution": "node",
+        "strict": true,
+        "esModuleInterop": true,
         "composite": true,
         "declaration": true,
         "declarationMap": true,
-        "outDir": "dist"
+        "outDir": "dist",
     },
-    "files": [
-        "src/evaluation-types.ts", 
-        "src/game-events.ts",
-        "src/game-setup-types.ts"
-    ]
 }

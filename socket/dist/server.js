@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { createServer } from "http";
 import { Server } from 'socket.io';
 import { createClient } from 'redis';
-import * as GameEvents from "../../common/dist/game-events.js";
+import { GameEvents } from "../../common/dist/index.js";
 import { evaluateGuess } from "./evaluation.js";
 const availableRoomIds = "availableRoomIds";
 // Configure redis client
@@ -136,6 +136,12 @@ function updatePlayer(player) {
     return __awaiter(this, void 0, void 0, function* () {
         const playerHashName = getPlayerKeyName(player.socketId);
         yield redisClient.hSet(playerHashName, player);
+    });
+}
+function deletePlayer(socketId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const playerHashName = getPlayerKeyName(socketId);
+        yield redisClient.del(playerHashName);
     });
 }
 function retrievePlayerName(socketId) {

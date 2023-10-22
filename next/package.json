@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "dev-sock": "cd ../socket && tsc --noEmitOnError && node ../socket/ts-out/server.js & cd ../next && npm run dev && fg"
+    "dev-sock": "cd ../socket && tsc -b && node ../socket/dist/server.js & cd ../next && npm run dev && fg"
   },
   "dependencies": {
     "@types/node": "20.4.0",

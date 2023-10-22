@@ -1,8 +1,11 @@
 import { promises as fsPromises } from 'fs';
 import path from 'path';
-import { EvaluationRequestData, EvaluationResponseData, ColorData } from '../../common/dist/evaluation-types';
-import { Color } from '../../common/dist/evaluation-types.js';
-
+import { 
+    EvaluationRequestData, 
+    EvaluationResponseData, 
+    ColorData,
+    Color
+} from '../../common/dist/index.js';
 
 interface WordValidator {
     validateWord : (guess : string) => Promise<boolean>

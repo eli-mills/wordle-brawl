@@ -20,4 +20,3 @@ export type EvaluationResponseData = ColorData & {
 export type OpponentEvaluationResponseData = EvaluationResponseData & {
     playerName: string
 }
-

@@ -1,5 +1,5 @@
 import styles from '@/styles/OpponentCard.module.css';
-import { Color } from '../../../common/evaluation-types';
+import { Color } from '../../../common';
 
 type OpponentCardArgs = {
     playerName: string,

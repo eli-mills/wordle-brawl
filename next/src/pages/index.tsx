@@ -4,8 +4,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { GlobalContext } from './_app';
 import { io } from 'socket.io-client';
-import * as GameEvents from '../../../common/game-events';
-import { GameStateData } from '../../../common/game-setup-types';
+import { GameEvents, GameStateData } from '../../../common';
 
 
 export default function HomePage() {

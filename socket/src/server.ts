@@ -5,9 +5,10 @@ import {
     EvaluationRequestData, 
     EvaluationResponseData,  
     OpponentEvaluationResponseData,
-} from "../../common/src/evaluation-types" 
-import { GameStateData, JoinRoomRequestData } from "../../common/dist/game-setup-types"
-import * as GameEvents from "../../common/dist/game-events.js";
+    GameStateData,
+    JoinRoomRequestData,
+    GameEvents
+} from "../../common/dist/index.js";
 import { evaluateGuess } from "./evaluation.js";
 import { Player, Room } from './model';
 
@@ -139,6 +140,11 @@ async function getPlayer(socketId: string) : Promise<Player> {
 async function updatePlayer(player: Player) : Promise<void> {
     const playerHashName : string = getPlayerKeyName(player.socketId);
     await redisClient.hSet(playerHashName, player);
+}
+
+async function deletePlayer(socketId: string) : Promise<void> {
+    const playerHashName = getPlayerKeyName(socketId);
+    await redisClient.del(playerHashName);
 }
 
 async function retrievePlayerName(socketId: string) : Promise<string> {

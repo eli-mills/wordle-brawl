@@ -3,8 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { GlobalContext } from './_app';
 import { useEffect, useContext, useState } from 'react';
-import * as GameEvents from "../../../common/game-events";
-import { JoinRoomRequestData, GameStateData } from "../../../common/game-setup-types";
+import { JoinRoomRequestData, GameStateData, GameEvents } from "../../../common";
 import NameModal from '@/components/NameModal';
 
 

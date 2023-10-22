@@ -16,7 +16,7 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
 };
 import { promises as fsPromises } from 'fs';
 import path from 'path';
-import { Color } from '../../common/dist/evaluation-types.js';
+import { Color } from '../../common/dist/index.js';
 class FileWordValidator {
     constructor(filePath) {
         this.filePath = filePath;

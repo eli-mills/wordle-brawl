@@ -1,8 +1,7 @@
 import { useContext, useState, useEffect } from 'react';
 import { GlobalContext } from '@/pages/_app';
 import OpponentCard from './OpponentCard';
-import { Color, OpponentEvaluationResponseData } from '../../../common/evaluation-types';
-import * as GameEvents from '../../../common/game-events';
+import { Color, OpponentEvaluationResponseData, GameEvents } from '../../../common';
 
 export default function OpponentPanel() {
     const {opponentList, socket} = useContext(GlobalContext);

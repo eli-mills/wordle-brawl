@@ -1,8 +1,11 @@
 import { useContext, useEffect } from 'react';
 import { GlobalContext } from '@/pages/_app';
-import { EvaluationRequestData, EvaluationResponseData } from '../../../common/evaluation-types';
-import * as GameEvents from "../../../common/game-events";
-import { Color } from '../../../common/evaluation-types';
+import { 
+    EvaluationRequestData, 
+    EvaluationResponseData,
+    GameEvents,
+    Color 
+} from '../../../common';
 
 import Key from '@/components/Key';
 import SpacerKey from '@/components/SpacerKey';
