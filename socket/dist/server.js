@@ -30,61 +30,55 @@ const io = new Server(server, {
 io.on('connection', (socket) => __awaiter(void 0, void 0, void 0, function* () {
     console.log('a user connected');
     // Add event listeners to socket
-    socket.on('disconnecting', () => onDisconnect(socket));
-    socket.on(GameEvents.DECLARE_NAME, (name) => {
-        onDeclareName(socket, name);
-    });
+    socket.on(GameEvents.REQUEST_NEW_ROOM, () => onCreateRoomRequest(socket));
+    socket.on(GameEvents.REQUEST_JOIN_ROOM, (data) => onJoinRoomRequest(socket, data.room));
+    socket.on(GameEvents.DECLARE_NAME, (name) => onDeclareName(socket, name));
     socket.on(GameEvents.GUESS, (guessReq) => onGuess(socket, guessReq));
-    socket.on(GameEvents.REQUEST_JOIN_ROOM, (data) => __awaiter(void 0, void 0, void 0, function* () {
-        yield onJoinRoomRequest(socket, data.room);
-    }));
-    socket.on(GameEvents.REQUEST_NEW_ROOM, () => __awaiter(void 0, void 0, void 0, function* () { return yield onCreateRoomRequest(socket); }));
+    socket.on('disconnecting', () => onDisconnect(socket));
 }));
 // Define event listeners
 function onDisconnect(socket) {
-    return __awaiter(this, void 0, void 0, function* () {
-        console.log(`Player ${socket.id} disconnected`);
-        const rooms = socket.rooms;
-        if (rooms.size <= 0)
-            return;
-        for (let room of rooms) {
-            const remainingConnections = io.of("/").adapter.rooms.get(room);
-            if (room !== socket.id && (remainingConnections === null || remainingConnections === void 0 ? void 0 : remainingConnections.size) === 1) {
-                console.log(`Return ${room} to available rooms list`);
-                yield redisClient.sAdd(availableRoomIds, room);
-            }
+    // Delete player from db
+    console.log(`Player ${socket.id} disconnected`);
+    deletePlayer(socket.id);
+    // Return room to available rooms list
+    for (let room of socket.rooms) {
+        const remainingConnections = io.of("/").adapter.rooms.get(room);
+        if (room !== socket.id && (remainingConnections === null || remainingConnections === void 0 ? void 0 : remainingConnections.size) === 1) {
+            console.log(`Returning ${room} to available rooms list`);
+            redisClient.sAdd(availableRoomIds, room);
         }
-    });
+    }
 }
 function onJoinRoomRequest(socket, roomId) {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log(`Received joinRoomRequest for room ${roomId}`);
+        console.log(`Player ${socket.id} request to join room ${roomId}`);
         if (!io.sockets.adapter.rooms.has(roomId)) {
             console.log(`Room ${roomId} does not exist`);
             socket.emit(GameEvents.ROOM_DNE);
             return;
         }
         socket.join(roomId);
+        console.log(`Player ${socket.id} successfully joined room ${roomId}`);
         yield createPlayer(socket.id, roomId);
         yield emitUpdatedGameState(roomId);
     });
 }
 function onCreateRoomRequest(socket) {
-    var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        console.log("create room request received");
-        const roomIdList = (yield redisClient.sPop(availableRoomIds));
-        console.log(`Retrieved roomIDList: ${roomIdList}`);
-        const roomId = (typeof roomIdList === "string" ? roomIdList : roomIdList[0]).padStart(4, "0");
-        console.log(`retrieved room number: ${roomId}`);
-        if (roomId === undefined)
+        console.log("Create room request received");
+        // Retrieve room number
+        const roomId = (yield redisClient.sPop(availableRoomIds));
+        const roomIdPadded = roomId === null || roomId === void 0 ? void 0 : roomId.padStart(4, "0");
+        if (roomIdPadded === undefined)
             return socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
-        socket.join(roomId);
-        const playerIds = (_a = io.of("/").adapter.rooms.get(roomId)) === null || _a === void 0 ? void 0 : _a.values();
-        console.log(`Just joined room ${roomId}: ${Array.from(playerIds !== null && playerIds !== void 0 ? playerIds : [])}`);
-        yield createPlayer(socket.id, roomId);
+        console.log(`Retrieved room number: ${roomIdPadded}`);
+        // Create room and add player to db
+        socket.join(roomIdPadded);
+        console.log(`Player ${socket.id} joined room ${roomIdPadded}`);
+        createPlayer(socket.id, roomIdPadded);
         const gameStateData = {
-            roomId,
+            roomId: roomIdPadded,
             playerList: []
         };
         socket.emit(GameEvents.NEW_ROOM_CREATED, gameStateData);

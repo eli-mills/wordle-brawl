@@ -36,34 +36,34 @@ io.on('connection', async (socket) => {
     console.log('a user connected');
     
     // Add event listeners to socket
-    socket.on('disconnecting', () => onDisconnect(socket));
-    socket.on(GameEvents.DECLARE_NAME, (name : string) => {
-        onDeclareName(socket, name);
-    });
+    socket.on(GameEvents.REQUEST_NEW_ROOM, () => onCreateRoomRequest(socket));
+    socket.on(GameEvents.REQUEST_JOIN_ROOM, (data: JoinRoomRequestData) => onJoinRoomRequest(socket, data.room));
+    socket.on(GameEvents.DECLARE_NAME, (name : string) => onDeclareName(socket, name));
     socket.on(GameEvents.GUESS, (guessReq : EvaluationRequestData) => onGuess(socket, guessReq));
-    socket.on(GameEvents.REQUEST_JOIN_ROOM, async (data: JoinRoomRequestData) => {
-        await onJoinRoomRequest(socket, data.room);
-    });
-    socket.on(GameEvents.REQUEST_NEW_ROOM, async () => await onCreateRoomRequest(socket));
+    socket.on('disconnecting', () => onDisconnect(socket));
     
 });
 
 // Define event listeners
-async function onDisconnect (socket: Socket) { 
+
+function onDisconnect (socket: Socket) : void { 
+
+    // Delete player from db
     console.log(`Player ${socket.id} disconnected`);
-    const rooms: Set<string> = socket.rooms;
-    if (rooms.size <= 0) return;
-    for (let room of rooms) {
+    deletePlayer(socket.id);
+
+    // Return room to available rooms list
+    for (let room of socket.rooms) {
         const remainingConnections = io.of("/").adapter.rooms.get(room);
         if (room !== socket.id && remainingConnections?.size === 1) {
-            console.log(`Return ${room} to available rooms list`);
-            await redisClient.sAdd(availableRoomIds, room);
+            console.log(`Returning ${room} to available rooms list`);
+            redisClient.sAdd(availableRoomIds, room);
         }
     }
 }
 
 async function onJoinRoomRequest (socket: Socket, roomId: string) {
-    console.log(`Received joinRoomRequest for room ${roomId}`);
+    console.log(`Player ${socket.id} request to join room ${roomId}`);
     if (!io.sockets.adapter.rooms.has(roomId)) {
         console.log(`Room ${roomId} does not exist`);
         socket.emit(GameEvents.ROOM_DNE);
@@ -71,25 +71,28 @@ async function onJoinRoomRequest (socket: Socket, roomId: string) {
     }
 
     socket.join(roomId);
+    console.log(`Player ${socket.id} successfully joined room ${roomId}`);
     await createPlayer(socket.id, roomId);
     await emitUpdatedGameState(roomId);
 }
 
 async function onCreateRoomRequest (socket: Socket) {
-    console.log("create room request received");
-    const roomIdList: string[] | string = (await redisClient.sPop(availableRoomIds));
-    console.log(`Retrieved roomIDList: ${roomIdList}`);
-    const roomId = (typeof roomIdList === "string" ? roomIdList : roomIdList[0]).padStart(4, "0");
-    console.log(`retrieved room number: ${roomId}`);
-    if (roomId === undefined) return socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
+    console.log("Create room request received");
 
-    socket.join(roomId);
-    const playerIds = io.of("/").adapter.rooms.get(roomId)?.values();
-    console.log(`Just joined room ${roomId}: ${Array.from(playerIds ?? [])}`);
-    await createPlayer(socket.id, roomId);
+    // Retrieve room number
+    const roomId = (await redisClient.sPop(availableRoomIds)) as unknown as string | null;
+    const roomIdPadded = roomId?.padStart(4, "0");
+    if (roomIdPadded === undefined) return socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
+    
+    console.log(`Retrieved room number: ${roomIdPadded}`);
+    
+    // Create room and add player to db
+    socket.join(roomIdPadded);
+    console.log(`Player ${socket.id} joined room ${roomIdPadded}`);
+    createPlayer(socket.id, roomIdPadded);
 
     const gameStateData: GameStateData = {
-        roomId,
+        roomId: roomIdPadded,
         playerList: []
     };
 
@@ -109,12 +112,12 @@ async function onGuess ( socket : Socket, guessReq : EvaluationRequestData) {
     console.log(`Guess received: ${guessReq.guess}`);
 
     // Get socket's name
-    const playerName : string = await retrievePlayerName(socket.id);
+    const playerName = await retrievePlayerName(socket.id);
     console.log(`Guesser name retrieved: ${playerName}`);
 
     // Evaluate result
-    const result : EvaluationResponseData = await evaluateGuess(guessReq.guess);
-    const oppResult : OpponentEvaluationResponseData = {playerName, ...result};
+    const result = await evaluateGuess(guessReq.guess);
+    const oppResult = {playerName, ...result};
 
     // Send results
     console.log("Sending results");
@@ -171,7 +174,6 @@ function getPlayerKeyName(socketId: string) : string {
     return `player:${socketId}`;
 }
 
-
 async function populateAvailableRoomIds () {
     if (await redisClient.exists(availableRoomIds) && await redisClient.sCard(availableRoomIds) === 10000) {
         console.log("Not populating rooms");
@@ -183,6 +185,7 @@ async function populateAvailableRoomIds () {
         await redisClient.sAdd(availableRoomIds, roomId);
     }
 }
+
 // Connect to database and start server
 redisClient.connect()
 .then(populateAvailableRoomIds)
