@@ -1,20 +1,13 @@
-export enum Color {
-    Green,
-    Yellow,
-    Grey
-}
+export type Result = "hit" | "has" | "miss"
 
 export type EvaluationRequestData = {
     guess: string
 }
 
-export type ColorData = {
-    guessColors: Color[],
-    keyColors: Record<string, Color>
-}
-
-export type EvaluationResponseData = ColorData & {
-    accepted: boolean,
+export type EvaluationResponseData = {
+    resultByPosition?: Result[],
+    resultByLetter?: Record<string, Result>,
+    accepted: boolean
 }
 
 export type OpponentEvaluationResponseData = EvaluationResponseData & {

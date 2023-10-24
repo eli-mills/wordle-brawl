@@ -1,15 +1,23 @@
 import { createClient } from 'redis';
 const AVAILABLE_ROOM_IDS = "availableRoomIds";
-// Configure redis client
+/************************************************
+ *                                              *
+ *                 CONFIGURATION                *
+ *                                              *
+ ************************************************/
 const redisClient = createClient({
     url: process.env.DB_URL
 });
 redisClient.on("error", err => console.error("Redis client error", err));
-// Define db methods
-export async function connectClientToDb() {
+export async function initializeDbConn() {
     await redisClient.connect();
     await populateAvailableRoomIds();
 }
+/************************************************
+ *                                              *
+ *                CRUD - PLAYERS                *
+ *                                              *
+ ************************************************/
 export async function createPlayer(socketId, roomId) {
     const newPlayer = { socketId, roomId };
     await redisClient.hSet(getPlayerKeyName(socketId), newPlayer);
@@ -31,6 +39,11 @@ export async function retrievePlayerName(socketId) {
 function getPlayerKeyName(socketId) {
     return `player:${socketId}`;
 }
+/************************************************
+ *                                              *
+ *                  CRUD - ROOMS                *
+ *                                              *
+ ************************************************/
 export async function addRoomId(roomId) {
     redisClient.sAdd(AVAILABLE_ROOM_IDS, roomId);
 }

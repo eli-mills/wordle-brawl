@@ -1,18 +1,18 @@
 import styles from '@/styles/OpponentCard.module.css';
-import { Color } from '../../../common';
+import { Result } from '../../../common';
 
 type OpponentCardArgs = {
     playerName: string,
-    oppGuessHistory: Map<string, Color[][]>
+    oppGuessHistory: Map<string, Result[][]>
 }
 
-const colorEmojiMap = new Map<Color, string> ([
-    [Color.Green, "🟩"],
-    [Color.Grey, "⬜️"],
-    [Color.Yellow, "🟨"]
+const colorEmojiMap = new Map<Result, string> ([
+    ["hit", "🟩"],
+    ["miss", "⬜️"],
+    ["has", "🟨"]
 ]);
 
-function convertGuessRowToEmojis(guessRow: Color[]) : string {
+function convertGuessRowToEmojis(guessRow: Result[]) : string {
     return guessRow.map((emoji) => colorEmojiMap.get(emoji)).join("");
 }
 
@@ -20,7 +20,7 @@ export default function OpponentCard ( {playerName, oppGuessHistory}: OpponentCa
     return (
         <div className={styles.opponentCard}>
             <p>{playerName}</p>
-            {oppGuessHistory.get(playerName)?.map((row: Color[])=><p>{convertGuessRowToEmojis(row)}</p>)}
+            {oppGuessHistory.get(playerName)?.map((row: Result[])=><p>{convertGuessRowToEmojis(row)}</p>)}
         </div>
     )
 }

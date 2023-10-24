@@ -1,6 +1,5 @@
 import { promises as fsPromises } from 'fs';
 import path from 'path';
-import { Color } from '../../common/dist/index.js';
 class FileWordValidator {
     filePath;
     constructor(filePath) {
@@ -20,40 +19,38 @@ class FileWordValidator {
         }
     };
 }
-const getSolution = async () => {
+async function getSolution() {
     return "BAGEL";
-};
-const getColors = async (guess) => {
-    const guessColors = Array(5).fill(Color.Grey);
-    const keyColors = {};
-    const solution = (await getSolution()).split("");
-    // Green pass
+}
+function mutateIfHits(guess, solution, byPosition, byLetter) {
     for (let i = 0; i < 5; ++i) {
-        keyColors[guess[i]] = Color.Grey;
+        byLetter[guess[i]] = "miss";
         if (guess[i] === solution[i]) {
-            guessColors[i] = Color.Green;
-            keyColors[guess[i]] = Color.Green;
+            byPosition[i] = "hit";
+            byLetter[guess[i]] = "hit";
             solution[i] = "";
         }
     }
-    // Yellow pass   
+}
+function mutateIfHas(guess, solution, byPosition, byLetter) {
     for (let i = 0; i < 5; ++i) {
         if (solution.includes(guess[i])) {
-            guessColors[i] = Color.Yellow;
-            keyColors[guess[i]] = keyColors[guess[i]] !== Color.Green ? Color.Yellow : Color.Green;
+            byPosition[i] = "has";
+            byLetter[guess[i]] = byLetter[guess[i]] !== "hit" ? "has" : "hit";
             solution[solution.indexOf(guess[i])] = "";
         }
     }
-    return { guessColors, keyColors };
-};
-export const evaluateGuess = async (guess) => {
+}
+export async function evaluateGuess(guess) {
     const filePath = path.join(process.cwd(), "data/allowed.txt");
     const validator = new FileWordValidator(filePath);
     const accepted = await validator.validateWord(guess);
-    const { guessColors, keyColors } = accepted ? await getColors(guess) : { guessColors: [], keyColors: {} };
-    return {
-        accepted,
-        guessColors,
-        keyColors
-    };
-};
+    if (!accepted)
+        return { accepted };
+    const solution = (await getSolution()).split("");
+    const resultByPosition = Array(5).fill("miss");
+    const resultByLetter = {};
+    mutateIfHits(guess, solution, resultByPosition, resultByLetter);
+    mutateIfHas(guess, solution, resultByPosition, resultByLetter);
+    return { resultByPosition, resultByLetter, accepted };
+}

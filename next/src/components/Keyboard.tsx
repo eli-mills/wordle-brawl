@@ -4,7 +4,7 @@ import {
     EvaluationRequestData, 
     EvaluationResponseData,
     GameEvents,
-    Color 
+    Result 
 } from '../../../common';
 
 import Key from '@/components/Key';
@@ -17,10 +17,10 @@ const firstRow: string[] = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"];
 const secondRow: string[] = ["A", "S", "D", "F", "G", "H", "J", "K", "L"];
 const thirdRow: string[] = ["Z", "X", "C", "V", "B", "N", "M"];
 
-const colorTable = new Map<Color, string> ([
-    [Color.Green, "green"],
-    [Color.Yellow, "goldenrod"],
-    [Color.Grey, "lightslategrey"]
+const colorTable = new Map<Result, string> ([
+    ["hit", "green"],
+    ["has", "goldenrod"],
+    ["miss", "lightslategrey"]
 ]);
 
 type KeyboardProps = {
@@ -120,13 +120,13 @@ export default function Keyboard({
     const handleEvaluation = (evaluation : EvaluationResponseData) => {
         if (!evaluation.accepted) return;
 
-        evaluation.guessColors && colorLetters(evaluation.guessColors);
-        evaluation.keyColors && colorKeys(evaluation.keyColors);
+        evaluation.resultByPosition && colorLetters(evaluation.resultByPosition);
+        evaluation.resultByLetter && colorKeys(evaluation.resultByLetter);
         setCurrentGuessNum(currentGuessNum + 1);
         setCurrentLetterNum(0);
     }
 
-    const colorLetters = (colors : Color[]) : void => {
+    const colorLetters = (colors : Result[]) : void => {
         for (let i = 0; i < colors.length; ++i) {
             const letterId : string = `guess${currentGuessNum}letter${i}`;
             const letterElement = document.getElementById(letterId);
@@ -137,7 +137,7 @@ export default function Keyboard({
         }
     }
 
-    const colorKeys = (keyColors : Record<string, Color>) : void => {
+    const colorKeys = (keyColors : Record<string, Result>) : void => {
         for (const letter in keyColors) {
             const keyId : string = `key${letter}`;
             const keyElement = document.getElementById(keyId);

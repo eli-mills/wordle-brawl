@@ -3,6 +3,11 @@ import { createServer } from "http";
 import * as db from "./db.js";
 import { GameEvents } from "../../common/dist/index.js";
 import { evaluateGuess } from "./evaluation.js";
+/************************************************
+ *                                              *
+ *                CONFIGURATION                 *
+ *                                              *
+ ************************************************/
 // Instantiate socket server
 export const httpServer = createServer();
 export const io = new Server(httpServer, {
@@ -11,13 +16,21 @@ export const io = new Server(httpServer, {
         methods: ["GET", "POST"]
     }
 });
-function getConnectionsFromRoomId(roomId) {
-    return io.of("/").adapter.rooms.get(roomId) ?? new Set();
-}
-function roomDoesExist(roomId) {
-    return io.sockets.adapter.rooms.has(roomId);
-}
-export function onDisconnect(socket) {
+// Configure socket event listeners
+io.on('connection', async (newSocket) => {
+    console.log(`User ${newSocket.id} connected.`);
+    newSocket.on(GameEvents.REQUEST_NEW_ROOM, () => onCreateRoomRequest(newSocket));
+    newSocket.on(GameEvents.REQUEST_JOIN_ROOM, (data) => onJoinRoomRequest(newSocket, data.room));
+    newSocket.on(GameEvents.DECLARE_NAME, (name) => onDeclareName(newSocket, name));
+    newSocket.on(GameEvents.GUESS, (guessReq) => onGuess(newSocket, guessReq));
+    newSocket.on('disconnecting', () => onDisconnect(newSocket));
+});
+/************************************************
+ *                                              *
+ *                EVENT LISTENERS               *
+ *                                              *
+ ************************************************/
+function onDisconnect(socket) {
     // Delete player from db
     console.log(`Player ${socket.id} disconnected`);
     db.deletePlayer(socket.id);
@@ -25,13 +38,14 @@ export function onDisconnect(socket) {
     for (let roomId of socket.rooms) {
         if (roomId === socket.id)
             continue;
+        // TODO: add code to update other players on leaving
         if (getConnectionsFromRoomId(roomId).size === 1) {
             console.log(`Returning ${roomId} to available rooms list`);
             db.addRoomId(roomId);
         }
     }
 }
-export async function onJoinRoomRequest(socket, roomId) {
+async function onJoinRoomRequest(socket, roomId) {
     console.log(`Player ${socket.id} request to join room ${roomId}`);
     if (!roomDoesExist(roomId)) {
         console.log(`Room ${roomId} does not exist`);
@@ -43,7 +57,7 @@ export async function onJoinRoomRequest(socket, roomId) {
     await db.createPlayer(socket.id, roomId);
     await emitUpdatedGameState(roomId);
 }
-export async function onCreateRoomRequest(socket) {
+async function onCreateRoomRequest(socket) {
     console.log("Create room request received");
     // Retrieve room number
     const roomId = await db.getRandomRoomId();
@@ -61,14 +75,14 @@ export async function onCreateRoomRequest(socket) {
     };
     socket.emit(GameEvents.NEW_ROOM_CREATED, gameStateData);
 }
-export async function onDeclareName(socket, name) {
+async function onDeclareName(socket, name) {
     console.log(`Name received: ${name}. Writing to db.`);
     const player = await db.getPlayer(socket.id);
     player.name = name;
     await db.updatePlayer(player);
     await emitUpdatedGameState(player.roomId);
 }
-export async function onGuess(socket, guessReq) {
+async function onGuess(socket, guessReq) {
     console.log(`Guess received: ${guessReq.guess}`);
     // Get socket's name
     const playerName = await db.retrievePlayerName(socket.id);
@@ -81,6 +95,11 @@ export async function onGuess(socket, guessReq) {
     socket.emit(GameEvents.EVALUATION, result);
     socket.broadcast.emit(GameEvents.OPP_EVALUATION, oppResult);
 }
+/************************************************
+ *                                              *
+ *                    HELPERS                   *
+ *                                              *
+ ************************************************/
 async function emitUpdatedGameState(roomId) {
     const playerList = await retrieveNamesFromRoom(roomId);
     const gameStateData = { roomId, playerList };
@@ -98,4 +117,10 @@ async function retrieveNamesFromRoom(roomId) {
     }
     console.log(`Returning playerList: ${playerList}`);
     return playerList;
+}
+function getConnectionsFromRoomId(roomId) {
+    return io.of("/").adapter.rooms.get(roomId) ?? new Set();
+}
+function roomDoesExist(roomId) {
+    return io.sockets.adapter.rooms.has(roomId);
 }
