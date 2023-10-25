@@ -1,5 +1,7 @@
 import { Socket } from 'socket.io-client';
-import { useState } from 'react';
+import { useContext } from 'react';
+import { GlobalContext } from '@/pages/_app';
+import { GameEvents } from '../../../common';
 
 type NameModalArgs = {
     socket: Socket | undefined,
@@ -7,10 +9,10 @@ type NameModalArgs = {
 }
 
 export default function NameModal({socket, setDisplayModal} : NameModalArgs) {
-    const [playerName, setPlayerName] = useState<string>();
+    const { playerName, setName } = useContext(GlobalContext);
 
     const onButtonClick = () => {
-        socket && socket.emit("declare-name", playerName);
+        socket?.emit(GameEvents.DECLARE_NAME, playerName);
         setDisplayModal(false);
     }
 
@@ -18,7 +20,7 @@ export default function NameModal({socket, setDisplayModal} : NameModalArgs) {
         <div className="nameModalBackground">
             <div className="nameModal">
                 <input type="text" 
-                onChange={e => setPlayerName(e.target.value)}
+                onChange={e => setName(e.target.value)}
                 onKeyUp={e => e.stopPropagation()}/>
                 <button className="submitName" onClick={onButtonClick}>Submit</button>
             </div>

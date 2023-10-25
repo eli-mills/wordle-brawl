@@ -8,4 +8,5 @@ export declare const NEW_ROOM_CREATED = "new-room-created";
 export declare const REQUEST_JOIN_ROOM = "request-join-room";
 export declare const ROOM_DNE = "room-dne";
 export declare const NO_ROOMS_AVAILABLE = "no-rooms-available";
+export declare const PLAYER_DISCONNECTED = "player-disconnected";
 //# sourceMappingURL=game-events.d.ts.map

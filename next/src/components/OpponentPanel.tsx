@@ -1,12 +1,12 @@
 import { useContext, useState, useEffect } from 'react';
 import { GlobalContext } from '@/pages/_app';
 import OpponentCard from './OpponentCard';
-import { Result, OpponentEvaluationResponseData, GameEvents } from '../../../common';
+import { Result, OpponentEvaluationResponseData, GameEvents, PlayerDisconnectedData } from '../../../common';
 
 export default function OpponentPanel() {
-    const {opponentList, socket} = useContext(GlobalContext);
+    const {opponentList, socket, playerName} = useContext(GlobalContext);
     const [oppGuessHistory, setOppGuessHistory] = useState<Map<string, Result[][]>>(new Map<string, Result[][]>);
-
+    console.log(`Rendering, opponentList = ${opponentList}`);
     useEffect(() => {
         socket?.on(GameEvents.OPP_EVALUATION, (data: OpponentEvaluationResponseData) => {
             const playerHistory = oppGuessHistory.get(data.playerName);
@@ -19,7 +19,9 @@ export default function OpponentPanel() {
 
     return (
         <div>
-            {opponentList.map(((opponentName, index) => <OpponentCard key={index} playerName={opponentName} oppGuessHistory={oppGuessHistory}/>))}
+            { opponentList.map((opponentName) => 
+                opponentName !== playerName && <OpponentCard key={opponentName} playerName={opponentName} oppGuessHistory={oppGuessHistory}/>
+            )}
         </div>
     )
 }

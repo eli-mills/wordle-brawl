@@ -8,3 +8,4 @@ export const NEW_ROOM_CREATED = "new-room-created";
 export const REQUEST_JOIN_ROOM = "request-join-room";
 export const ROOM_DNE = "room-dne";
 export const NO_ROOMS_AVAILABLE = "no-rooms-available";
+export const PLAYER_DISCONNECTED = "player-disconnected";

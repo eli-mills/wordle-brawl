@@ -5,7 +5,9 @@ import {
     JoinRoomRequestData,
     EvaluationRequestData,
     GameStateData,
-    GameEvents
+    GameEvents,
+    PlayerDisconnectedData,
+    OpponentEvaluationResponseData
 } from "../../common/dist/index.js"
 import { evaluateGuess } from "./evaluation.js"
 
@@ -33,7 +35,8 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.REQUEST_JOIN_ROOM, (data: JoinRoomRequestData) => onJoinRoomRequest(newSocket, data.room));
     newSocket.on(GameEvents.DECLARE_NAME, (name : string) => onDeclareName(newSocket, name));
     newSocket.on(GameEvents.GUESS, (guessReq : EvaluationRequestData) => onGuess(newSocket, guessReq));
-    newSocket.on('disconnecting', () => onDisconnect(newSocket));
+    newSocket.on('disconnecting', () => onDisconnecting(newSocket));
+    newSocket.on('disconnect', () => onDisconnect(newSocket));
     
 });
 
@@ -44,23 +47,28 @@ io.on('connection', async (newSocket) => {
  *                                              *
  ************************************************/
 
-function onDisconnect (socket: Socket) : void { 
-
-    // Delete player from db
-    console.log(`Player ${socket.id} disconnected`);
-    db.deletePlayer(socket.id);
+function onDisconnecting (socket: Socket) : void { 
 
     // Return room to available rooms list
     for (let roomId of socket.rooms) {
         if (roomId === socket.id) continue;
-
-        // TODO: add code to update other players on leaving
-
+        
         if (getConnectionsFromRoomId(roomId).size === 1) {
             console.log(`Returning ${roomId} to available rooms list`);
             db.addRoomId(roomId);
         }
     }
+}
+
+async function onDisconnect(socket: Socket) : Promise<void> {
+    // Get player room
+    const roomId = await db.retrievePlayerRoom(socket.id);
+    
+    // Delete player from db
+    console.log(`Player ${socket.id} disconnected`);
+    await db.deletePlayer(socket.id);
+    
+    emitUpdatedGameState(roomId);
 }
 
 async function onJoinRoomRequest (socket: Socket, roomId: string) {
@@ -101,6 +109,8 @@ async function onCreateRoomRequest (socket: Socket) {
 }
 
 async function onDeclareName (socket : Socket, name : string) {
+    // TODO: add check for name uniqueness in room
+
     console.log(`Name received: ${name}. Writing to db.`);
 
     const player = await db.getPlayer(socket.id);
@@ -118,12 +128,16 @@ async function onGuess ( socket: Socket, guessReq: EvaluationRequestData) {
 
     // Evaluate result
     const result = await evaluateGuess(guessReq.guess);
-    const oppResult = {playerName, ...result};
-
+    
     // Send results
     console.log("Sending results");
     socket.emit(GameEvents.EVALUATION, result);
-    socket.broadcast.emit(GameEvents.OPP_EVALUATION, oppResult);
+    if (result.accepted) {
+        console.log("Sending results to opponent.");
+        const oppResult: OpponentEvaluationResponseData = {playerName, ...result} as OpponentEvaluationResponseData;
+        socket.broadcast.emit(GameEvents.OPP_EVALUATION, oppResult);
+
+    }
 }
 
 

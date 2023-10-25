@@ -34,7 +34,7 @@ export async function initializeDbConn() : Promise<void> {
  ************************************************/
 
 export async function createPlayer(socketId: string, roomId: string) : Promise<void> {
-    const newPlayer = { socketId, roomId };
+    const newPlayer: Player = { socketId, roomId };
     await redisClient.hSet(getPlayerKeyName(socketId), newPlayer);
 }
 
@@ -54,6 +54,10 @@ export async function deletePlayer(socketId: string) : Promise<void> {
 
 export async function retrievePlayerName(socketId: string) : Promise<string> {
     return await redisClient.hGet(getPlayerKeyName(socketId), "name") ?? "";
+}
+
+export async function retrievePlayerRoom(socketId: string) : Promise<string> {
+    return await redisClient.hGet(getPlayerKeyName(socketId), "roomId") ?? "";
 }
 
 function getPlayerKeyName(socketId: string) : string {

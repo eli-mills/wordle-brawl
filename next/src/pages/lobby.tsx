@@ -27,17 +27,10 @@ export default function LobbyPage() {
 
     useEffect(()=> {
         socket?.on(GameEvents.ROOM_DNE, () => alert("The requested room does not exist."));
-        socket?.on(GameEvents.UPDATE_GAME_STATE, (gameState: GameStateData) => {
-            console.log(gameState);
-            setOpponentList(gameState.playerList);
-            setRoom(gameState.roomId);
-        });
-
         return () => {
             socket?.off(GameEvents.ROOM_DNE);
-            socket?.off(GameEvents.UPDATE_GAME_STATE);
         }
-    }, [socket, opponentList, room]);
+    }, []);
 
     return (
         <>

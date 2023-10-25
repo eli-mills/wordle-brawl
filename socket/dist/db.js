@@ -36,6 +36,9 @@ export async function deletePlayer(socketId) {
 export async function retrievePlayerName(socketId) {
     return await redisClient.hGet(getPlayerKeyName(socketId), "name") ?? "";
 }
+export async function retrievePlayerRoom(socketId) {
+    return await redisClient.hGet(getPlayerKeyName(socketId), "roomId") ?? "";
+}
 function getPlayerKeyName(socketId) {
     return `player:${socketId}`;
 }
