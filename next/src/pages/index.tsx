@@ -4,7 +4,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { GlobalContext } from './_app';
 import { io } from 'socket.io-client';
-import { GameEvents, GameStateData } from '../../../common';
+import { GameEvents, Game } from '../../../common';
 
 
 export default function HomePage() {
@@ -15,14 +15,14 @@ export default function HomePage() {
     useEffect( () => {
         const socket = io("http://eli.local:3001");
         setSocket(socket);
-        socket.on(GameEvents.NEW_ROOM_CREATED, (data: GameStateData) => {
+        socket.on(GameEvents.NEW_GAME_CREATED, (data: Game) => {
             router.push(`/lobby?room=${data.roomId}`);
         });
     }, []);
 
     function requestCreateRoom(e: any) {
         e.preventDefault();
-        socket?.emit(GameEvents.REQUEST_NEW_ROOM);
+        socket?.emit(GameEvents.REQUEST_NEW_GAME);
     }
 
     return (

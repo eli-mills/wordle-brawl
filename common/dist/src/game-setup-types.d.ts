@@ -1,8 +1,16 @@
+import { Result } from "./evaluation-types";
 export type JoinRoomRequestData = {
     room: string;
 };
-export type GameStateData = {
+export type Game = {
     roomId: string;
-    playerList: string[];
+    leader: Player;
+    playerList: Player[];
+};
+export type Player = {
+    socketId: string;
+    roomId: string;
+    name: string;
+    guessResultHistory: Result[][];
 };
 //# sourceMappingURL=game-setup-types.d.ts.map
