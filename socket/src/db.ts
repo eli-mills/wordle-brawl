@@ -47,11 +47,6 @@ export async function createPlayer(socketId: string) : Promise<void> {
     }    
 }
 
-export async function playerJoinGame(socketId: string, roomId: string) : Promise<void> {
-    await updatePlayerRoom(socketId, roomId);
-    await addPlayerToList(socketId, roomId);
-}
-
 /**
  * Retrieves given player from DB.
  * 
@@ -111,13 +106,22 @@ export async function updatePlayerName(socketId: string, playerName: string) : P
     }
 }
 
-async function updatePlayerRoom(socketId: string, roomId: string) : Promise<void> {
+/**
+ * Assigns the given roomId and adds player to that room's playerList.
+ * 
+ * @param socketId : ID of the socket connection used by the player
+ * @param roomId : ID of the room of the game the player has joined
+ */
+export async function updatePlayerRoom(socketId: string, roomId: string) : Promise<void> {
     try {
         await redisClient.hSet(getRedisPlayerKey(socketId), "roomId", roomId);
     } catch (err) {
         console.error(`DB error when updating player ${socketId} to have roomId ${roomId}`);
         throw err;
     }
+
+    await addPlayerToList(socketId, roomId);
+
 }
 
 /**

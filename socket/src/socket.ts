@@ -79,7 +79,7 @@ async function onJoinGameRequest (socket: Socket, roomId: string) : Promise<void
 
     socket.join(roomId);
     console.log(`Player ${socket.id} successfully joined room ${roomId}`);
-    await db.playerJoinGame(socket.id, roomId);
+    await db.updatePlayerRoom(socket.id, roomId);
     await emitUpdatedGameState(roomId);
 }
 
