@@ -1,7 +1,11 @@
-import { useEffect } from 'react';
-import { Socket } from 'socket.io-client';
-import { EvaluationRequestData, EvaluationResponseData } from '../../../common/evaluation-types';
-import * as GameEvents from "../../../common/game-events";
+import { useContext, useEffect } from 'react';
+import { GlobalContext } from '@/pages/_app';
+import { 
+    EvaluationRequestData, 
+    EvaluationResponseData,
+    GameEvents,
+    Result 
+} from '../../../common';
 
 import Key from '@/components/Key';
 import SpacerKey from '@/components/SpacerKey';
@@ -13,8 +17,13 @@ const firstRow: string[] = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"];
 const secondRow: string[] = ["A", "S", "D", "F", "G", "H", "J", "K", "L"];
 const thirdRow: string[] = ["Z", "X", "C", "V", "B", "N", "M"];
 
+const colorTable = new Map<Result, string> ([
+    ["hit", "green"],
+    ["has", "goldenrod"],
+    ["miss", "lightslategrey"]
+]);
+
 type KeyboardProps = {
-    socket: Socket | undefined,
     guesses: string[][],
     setGuesses: (_: string[][]) => void,
     currentGuessNum: number, 
@@ -24,7 +33,6 @@ type KeyboardProps = {
 }
 
 export default function Keyboard({
-    socket,
     guesses,
     setGuesses,
     currentGuessNum, 
@@ -38,6 +46,8 @@ export default function Keyboard({
      *                  REACT STATE                     *
      *                                                  *
     ****************************************************/
+    const { socket } = useContext(GlobalContext);
+    
     // Socket listeners
     useEffect(() => {
         socket && socket.on(GameEvents.EVALUATION, handleEvaluation);
@@ -110,23 +120,24 @@ export default function Keyboard({
     const handleEvaluation = (evaluation : EvaluationResponseData) => {
         if (!evaluation.accepted) return;
 
-        evaluation.guessColors && colorLetters(evaluation.guessColors);
-        evaluation.keyColors && colorKeys(evaluation.keyColors);
+        evaluation.resultByPosition && colorLetters(evaluation.resultByPosition);
+        evaluation.resultByLetter && colorKeys(evaluation.resultByLetter);
         setCurrentGuessNum(currentGuessNum + 1);
         setCurrentLetterNum(0);
     }
 
-    const colorLetters = (colors : string[]) : void => {
-        for (let i = 0; i < 5; ++i) {
+    const colorLetters = (colors : Result[]) : void => {
+        for (let i = 0; i < colors.length; ++i) {
             const letterId : string = `guess${currentGuessNum}letter${i}`;
             const letterElement = document.getElementById(letterId);
+
             if (letterElement !== null) {
-                letterElement.style.backgroundColor = colors[i];
+                letterElement.style.backgroundColor = colorTable.get(colors[i]) ?? "";
             } 
         }
     }
 
-    const colorKeys = (keyColors : Record<string, string>) : void => {
+    const colorKeys = (keyColors : Record<string, Result>) : void => {
         for (const letter in keyColors) {
             const keyId : string = `key${letter}`;
             const keyElement = document.getElementById(keyId);
@@ -134,7 +145,7 @@ export default function Keyboard({
             
             keyElement.style.backgroundColor = keyElement.style.backgroundColor === "green"
                 ? "green"
-                : keyColors[letter];
+                : colorTable.get(keyColors[letter]) ?? "";
         }
     }
 
