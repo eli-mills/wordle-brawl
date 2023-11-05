@@ -19,6 +19,7 @@ export const io = new Server(httpServer, {
 // Configure socket event listeners
 io.on('connection', async (newSocket) => {
     console.log(`User ${newSocket.id} connected.`);
+    await db.createPlayer(newSocket.id);
     newSocket.on(GameEvents.REQUEST_NEW_GAME, () => onCreateGameRequest(newSocket));
     newSocket.on(GameEvents.REQUEST_JOIN_GAME, (data) => onJoinGameRequest(newSocket, data.room));
     newSocket.on(GameEvents.DECLARE_NAME, (name) => onDeclareName(newSocket, name));
@@ -56,7 +57,7 @@ async function onJoinGameRequest(socket, roomId) {
     }
     socket.join(roomId);
     console.log(`Player ${socket.id} successfully joined room ${roomId}`);
-    await db.createPlayer(socket.id, roomId);
+    await db.playerJoinGame(socket.id, roomId);
     await emitUpdatedGameState(roomId);
 }
 async function onDeclareName(socket, name) {

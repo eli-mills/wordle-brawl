@@ -1,14 +1,6 @@
 import { createClient } from 'redis';
 import { Result, Player, Game } from '../../common';
 
-const AVAILABLE_ROOM_IDS = "availableRoomIds";
-
-type DbPlayer = Omit<Player, "guessResultHistory">
-
-type DbGame = Omit<Game, "playerList" | "leader"> & {
-    leader: string;
-};
-
 /************************************************
  *                                              *
  *                 CONFIGURATION                *
@@ -33,54 +25,114 @@ export async function initializeDbConn() : Promise<void> {
  *                                              *
  ************************************************/
 
-export async function createPlayer(socketId: string, roomId: string) : Promise<void> {
+type DbPlayer = Omit<Player, "guessResultHistory">
+
+/**
+ * Creates a new Player entry in the DB.
+ * 
+ * @param socketId : ID of the socket connection used by the player
+ */
+export async function createPlayer(socketId: string) : Promise<void> {
     const newPlayer: DbPlayer = { 
         socketId, 
-        roomId, 
+        roomId: "", 
         name: "",
     };
 
     try {
         await redisClient.hSet(getRedisPlayerKey(socketId), newPlayer);
     } catch (err) {
-        console.log(`DB error when creating Player ${JSON.stringify(newPlayer)}`);
-        console.log(err);
-    }
-
-    try {
-        await addPlayerToList(roomId, socketId);
-    } catch (err) {
-        console.log(`DB error when adding Player ${JSON.stringify(newPlayer)} to list ${roomId}`);
-        console.log(err);
-    }
+        console.error(`DB error when creating Player ${JSON.stringify(newPlayer)}`);
+        throw err;
+    }    
 }
 
+export async function playerJoinGame(socketId: string, roomId: string) : Promise<void> {
+    await updatePlayerRoom(socketId, roomId);
+    await addPlayerToList(socketId, roomId);
+}
+
+/**
+ * Retrieves given player from DB.
+ * 
+ * @param socketId : ID of the socket connection used by the player
+ * @returns : Converted Player object, or null if key not found
+ */
 async function getPlayer(socketId: string) : Promise<Player | null> {
-    let player;
+    let player: DbPlayer | {}
     try {
-        player = await redisClient.hGetAll(getRedisPlayerKey(socketId)) as DbPlayer;
-    } catch (err) { console.log("err6"); return null;}
+        player = await redisClient.hGetAll(getRedisPlayerKey(socketId));
+    } catch (err) { 
+        console.error(`DB error when retrieving Player ${socketId}.`); 
+        throw err;
+    }
+    if (Object.keys(player).length <= 0) return null;
+
     const guessResultHistory = await getGuessResultHistory(socketId);
+    
     return {
         guessResultHistory,
-        ...player
+        ...player as DbPlayer
     }
 };
 
+/**
+ * Removes given player from DB.
+ * 
+ * @param socketId : ID of the socket connection used by the player
+ */
 export async function deletePlayer(socketId: string) : Promise<void> {
     const player = await getPlayer(socketId);
     if (!player) return;
-    await redisClient.del(getRedisPlayerKey(socketId));
+
+    try {
+        await redisClient.del(getRedisPlayerKey(socketId));
+    } catch (err) {
+        console.error(`DB error when deleting player ${socketId}.`);
+        throw err;
+    }
+
     await deleteGuessResultHistory(socketId);
     await removePlayerFromList(player.roomId, socketId);
 }
 
+/**
+ * Assigns the given name to the given player in the DB.
+ * 
+ * @param socketId : ID of the socket connection used by the player
+ * @param playerName : name to be assigned to player
+ */
 export async function updatePlayerName(socketId: string, playerName: string) : Promise<void> {
-    await redisClient.hSet(getRedisPlayerKey(socketId), "name", playerName);
+    try {
+        await redisClient.hSet(getRedisPlayerKey(socketId), "name", playerName);
+    } catch (err) {
+        console.error(`DB error when updating player ${socketId} to have name ${playerName}`);
+        throw err;
+    }
 }
 
+async function updatePlayerRoom(socketId: string, roomId: string) : Promise<void> {
+    try {
+        await redisClient.hSet(getRedisPlayerKey(socketId), "roomId", roomId);
+    } catch (err) {
+        console.error(`DB error when updating player ${socketId} to have roomId ${roomId}`);
+        throw err;
+    }
+}
+
+/**
+ * Retrieves the given player's room.
+ * 
+ * @param socketId : ID of the socket connection used by the player
+ * @returns : ID of the room the player's socket has joined
+ */
 export async function getPlayerRoomId(socketId: string) : Promise<string> {
-    return await redisClient.hGet(getRedisPlayerKey(socketId), "roomId") ?? "";
+    try {
+        return await redisClient.hGet(getRedisPlayerKey(socketId), "roomId") ?? "";
+    } catch (err) {
+        console.error(`DB error when retrieving player ${socketId}'s roomId.`);
+        throw err;
+    }
 }
 
 function getRedisPlayerKey(socketId: string) : string {
@@ -94,10 +146,20 @@ function getRedisPlayerKey(socketId: string) : string {
  *                                              *
  ************************************************/
 
+type DbGame = Omit<Game, "playerList" | "leader"> & {
+    leader: string;
+};
+
 function getRedisGameKey(roomId: string) : string {
     return `game:${roomId}`;
 }
 
+/**
+ * Creates a new Player entry in the DB.
+ * 
+ * @param socketId : ID of the socket connection used by the player
+ * @returns : newly-created Game, or null if no rooms available
+ */
 export async function createGame(socketId: string) : Promise<Game | null> {
     const roomId = await getRandomRoomId();
     if (!roomId) return null;
@@ -108,43 +170,39 @@ export async function createGame(socketId: string) : Promise<Game | null> {
         roomId,
         leader: socketId,
     }
-    await redisClient.hSet(getRedisGameKey(roomId), newGame); 
+
+    try {
+        await redisClient.hSet(getRedisGameKey(roomId), newGame); 
+    } catch (err) {
+        console.error(`DB error when creating game ${roomId} for player ${socketId}`);
+        throw err;
+    }
 
     return await getGame(roomId);
 }
 
+/**
+ * Retrieves given game from DB.
+ * 
+ * @param roomId : ID of the room the game is being hosted in
+ * @returns : Converted Game object, or null if not found
+ */
 export async function getGame(roomId: string) : Promise<Game | null> {
-    let game,
-    playerList,
-    leader;
-    try {
-        game = await redisClient.hGetAll(getRedisGameKey(roomId)) as DbGame; 
-    } catch (err) {
-        console.log("err 1")
-        return null;
-    }
-    if (!Object.hasOwn(game, "leader")) return null;
+    let game: DbGame | {};
+    class GameMissingDataError extends Error {};
 
     try {
-        playerList = await getPlayerList(roomId);
-        if (playerList === null) return null;
+        game = await redisClient.hGetAll(getRedisGameKey(roomId)); 
     } catch (err) {
-        console.log("err 2")
-        return null;
+        console.log(`DB error when retrieving game ${roomId}`);
+        throw err;
     }
 
-    try {
+    if (Object.keys(game).length === 0) return null;
 
-        leader = await getPlayer(game.leader ?? "");
-    } catch (err) {
-        console.log("err 3");
-        return null;
-    }
-
-    if (!leader) {
-        console.log("Error: game with no leader.");
-        return null;
-    };
+    const playerList = await getPlayerList(roomId);
+    const leader = await getPlayer((game as DbGame).leader);
+    if (!leader) throw new GameMissingDataError(`Game ${roomId} missing leader.`);
 
     return {
         roomId,
@@ -153,33 +211,64 @@ export async function getGame(roomId: string) : Promise<Game | null> {
     }
 }
 
+/**
+ * Removes given player from DB.
+ * 
+ * @param roomId : ID of the room the game is being hosted in
+ */
 async function deleteGame(roomId: string) : Promise<void> {
     await deletePlayerList(roomId);
     await addRoomId(roomId);
-    await redisClient.del(getRedisGameKey(roomId));
+
+    try {
+        await redisClient.del(getRedisGameKey(roomId));
+    } catch (err) {
+        console.error(`DB error when deleting game ${roomId}.`);
+        throw err;
+    }
 }
 
 export async function gameExists(roomId: string) : Promise<boolean> {
-    return await redisClient.exists(getRedisGameKey(roomId)) > 0;
+    try {
+        return await redisClient.exists(getRedisGameKey(roomId)) > 0;
+    } catch (err) {
+        console.error(`DB error when checking whether game ${roomId} exists.`);
+        throw err;
+    }
 }
 
 
 /************************************************
  *                                              *
- *                  CRUD - ROOMS                *
+ *                CRUD - ROOM IDS               *
  *                                              *
  ************************************************/
 
+const AVAILABLE_ROOM_IDS = "availableRoomIds";
+
 async function addRoomId(roomId: string) : Promise<void> {
-    await redisClient.sAdd(AVAILABLE_ROOM_IDS, roomId);
+    try {
+        await redisClient.sAdd(AVAILABLE_ROOM_IDS, roomId);
+    } catch (err) {
+        console.error(`DB error when adding roomID ${roomId}`);
+        throw err;
+    }
 }
 
 async function getRandomRoomId() : Promise<string | null> {
-    return await redisClient.sPop(AVAILABLE_ROOM_IDS) as unknown as string | null;
+    try {
+        return await redisClient.sPop(AVAILABLE_ROOM_IDS) as unknown as string ?? null;
+    } catch (err) {
+        console.error(`DB error when retrieving random roomId.`);
+        throw err;
+    }
 }
 
-async function populateAvailableRoomIds () {
-    if (await redisClient.exists(AVAILABLE_ROOM_IDS) && await redisClient.sCard(AVAILABLE_ROOM_IDS) === 10000) {
+/**
+ * Fills database with 10000 room IDs if not already filled. 
+ */
+async function populateAvailableRoomIds () : Promise<void> {
+    if (await redisClient.sCard(AVAILABLE_ROOM_IDS) === 10000) {
         console.log("Not populating rooms");
         return;
     }
@@ -208,18 +297,45 @@ function deserializeGuessResult(guessResultSerialized: string) : string[] {
     return guessResultSerialized.split(" ");
 }
 
-export async function createGuessResult(socketId: string, guessResult: Result[]) {
+/**
+ * Record a guess result for the given player.
+ * 
+ * @param socketId : ID of the socket connection used by the player
+ * @param guessResult : List of eval results corresponding to each letter of guess 
+ */
+export async function createGuessResult(socketId: string, guessResult: Result[]) : Promise<void> {
     const serialized = serializeGuessResult(guessResult);
-    await redisClient.rPush(getRedisHistoryKey(socketId), serialized);
+
+    try {
+        await redisClient.rPush(getRedisHistoryKey(socketId), serialized);
+    } catch (err) {
+        console.error(`DB error when adding guess result ${guessResult} for player ${socketId}`);
+        throw err;
+    }
 }
 
+/**
+ * Returns given Player's guess result history.
+ * @param socketId : ID of the socket connection used by the player
+ * @returns : Player's guess result history, or [] if not found.
+ */
 async function getGuessResultHistory(socketId: string) : Promise<Result[][]> {
-    const history = await redisClient.lRange(getRedisHistoryKey(socketId), 0, -1);
-    return history.map((guessResult) => deserializeGuessResult(guessResult)) as Result[][]
+    try {
+        const history = await redisClient.lRange(getRedisHistoryKey(socketId), 0, -1);
+        return history.map((guessResult) => deserializeGuessResult(guessResult)) as Result[][]
+    } catch (err) {
+        console.error(`DB error when retrieving guessResultHistory for player ${socketId}`);
+        throw err;
+    }
 }
 
 async function deleteGuessResultHistory(socketId: string) : Promise<void> {
-    await redisClient.del(getRedisHistoryKey(socketId));
+    try {
+        await redisClient.del(getRedisHistoryKey(socketId));
+    } catch (err) {
+        console.error(`DB error when deleting guessResultHistory ${socketId}`);
+        throw err;
+    }
 }
 
 
@@ -233,43 +349,103 @@ function getRedisPlayerListKey(roomId: string) : string {
     return `playerList:${roomId}`;
 }
 
+/**
+ * Retrieve the list of players in the given room.
+ * 
+ * @param roomId : ID of the room the game is being hosted in
+ * @returns : list of converted Player objects within given room, or [] if not found
+ */
 async function getPlayerList(roomId: string) : Promise<Player[]> {
-    let playerIdList;
+    let playerIdList: string[];
     try {
-
         playerIdList = await redisClient.sMembers(getRedisPlayerListKey(roomId));
-    } catch (err) { console.log("err 4"); return []; }
+    } catch (err) { 
+        console.error(`DB error when retrieving playerList for game ${roomId}`);
+        throw err; 
+    }
     
-    const playerList = playerIdList.map(async (id: string) => await getPlayer(id));
+    const playerList = await Promise.all(
+        playerIdList.map(async (id: string) => await getPlayer(id))
+    );
 
+    return playerList.filter(player => player !== null) as Player[];
+}
+
+async function addPlayerToList(socketId: string, roomId: string) : Promise<void> {
     try {
-        const resolvedPlayerList = await Promise.all(playerList);
-        if (resolvedPlayerList.includes(null)) return [];
-        return resolvedPlayerList as Player[];
-    } catch (err) { console.log("err 5"); return []; }
+        await redisClient.sAdd(getRedisPlayerListKey(roomId), socketId);
+    } catch (err) {
+        console.error(`DB error when adding player ${socketId} to playerList ${roomId}`);
+        throw err;
+    }
 }
 
-async function addPlayerToList(roomId: string, socketId: string) : Promise<void> {
-    await redisClient.sAdd(getRedisPlayerListKey(roomId), socketId);
-}
-
+/**
+ * Removes given player from given list, and handles cleanup in DB.
+ * 
+ * @param roomId : ID of the room containing the Players
+ * @param socketId :  ID of the socket connection of the Player to remove
+ * @returns 
+ */
 async function removePlayerFromList(roomId: string, socketId: string) : Promise<void> {
-    await redisClient.sRem(getRedisPlayerListKey(roomId), socketId);
-    
-    // Check if list empty
-    const playerList = await getPlayerList(roomId);
-    if (playerList === null || playerList.length <= 0) {
-        return await deleteGame(roomId);
+    try {
+        await redisClient.sRem(getRedisPlayerListKey(roomId), socketId);
+    } catch (err) {
+        console.error(`DB error when removing player ${socketId} from playerList ${roomId}`);
+        throw err;
     }
     
-    // Check if player is leader
-    const leaderId = await redisClient.hGet(getRedisGameKey(roomId), "leader");
-    if (socketId === leaderId) {
-        await redisClient.hSet(getRedisGameKey(roomId), "leader", playerList[0].socketId);
+    await deleteGameIfListEmpty(roomId);
+    await replaceLeaderIfRemoved(socketId, roomId);
+}
+
+async function deleteGameIfListEmpty(roomId: string) : Promise<void> {
+    try {
+        if (await redisClient.sCard(getRedisPlayerListKey(roomId)) <= 0) {
+            return await deleteGame(roomId);
+        }
+    } catch (err) {
+        console.error(`DB error when checking length of playerList ${roomId}`);
+        throw err;
+    }
+}
+
+async function replaceLeaderIfRemoved(removedSocketId: string, roomId: string) : Promise<void> {
+    let leaderId: string | undefined,
+        newLeaderId: string | null;
+    try {
+        leaderId = await redisClient.hGet(getRedisGameKey(roomId), "leader");
+    } catch (err) {
+        console.error(`DB error when retrieving game ${roomId}'s leader`);
+        throw err;
     }
 
+    if (removedSocketId === leaderId) {
+        // Leader deleted, replace leader
+        try {
+            newLeaderId = await redisClient.sRandMember(getRedisPlayerListKey(roomId));
+        } catch (err) {
+            console.error(`DB error when retrieving new leaderId for game ${roomId}`);
+            throw err;
+        }
+        
+        try {
+            newLeaderId? 
+            await redisClient.hSet(getRedisGameKey(roomId), "leader", newLeaderId)
+            : null;
+        } catch (err) {
+            console.error(`DB error when setting player ${newLeaderId} as leader for game ${roomId}`);
+            throw err;
+        }
+    }
 }
 
 async function deletePlayerList(roomId: string) : Promise<void> {
-    await redisClient.del(getRedisPlayerListKey(roomId));
+    try {
+        await redisClient.del(getRedisPlayerListKey(roomId));
+    } catch (err) {
+        console.error(`DB error when deleting playerList ${roomId}`);
+        throw err;
+    }
+
 }
