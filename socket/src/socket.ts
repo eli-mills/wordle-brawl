@@ -2,12 +2,9 @@ import { Socket, Server } from "socket.io"
 import { createServer } from "http";
 import * as db from "./db.js"
 import {
-    JoinRoomRequestData,
-    EvaluationRequestData,
-    Game,
     GameEvents,
-    PlayerDisconnectedData,
-    OpponentEvaluationResponseData,
+    ClientToServerEvents,
+    ServerToClientEvents,
 } from "../../common/dist/index.js"
 import { evaluateGuess } from "./evaluation.js"
 
@@ -20,7 +17,7 @@ import { evaluateGuess } from "./evaluation.js"
 
 // Instantiate socket server
 export const httpServer = createServer();
-export const io = new Server(httpServer, {
+export const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
     cors: {
         origin: process.env.CORS_ORIGIN,
         methods: ["GET", "POST"]
@@ -32,9 +29,9 @@ io.on('connection', async (newSocket) => {
     console.log(`User ${newSocket.id} connected.`);
     await db.createPlayer(newSocket.id);
     newSocket.on(GameEvents.REQUEST_NEW_GAME, () => onCreateGameRequest(newSocket));
-    newSocket.on(GameEvents.REQUEST_JOIN_GAME, (data: JoinRoomRequestData) => onJoinGameRequest(newSocket, data.room));
+    newSocket.on(GameEvents.REQUEST_JOIN_GAME, (roomId: string) => onJoinGameRequest(newSocket, roomId));
     newSocket.on(GameEvents.DECLARE_NAME, (name : string) => onDeclareName(newSocket, name));
-    newSocket.on(GameEvents.GUESS, (guessReq : EvaluationRequestData) => onGuess(newSocket, guessReq));
+    newSocket.on(GameEvents.GUESS, (guess: string) => onGuess(newSocket, guess));
     newSocket.on('disconnect', () => onDisconnect(newSocket));
     
 });
@@ -60,13 +57,13 @@ async function onDisconnect(socket: Socket) : Promise<void> {
 async function onCreateGameRequest (socket: Socket) : Promise<void> {
     console.log("Create game request received");
 
-    const newGame = await db.createGame(socket.id);
-    if (newGame === null) {
+    const newRoomId = await db.createGame(socket.id);
+    if (newRoomId === null) {
         socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
         return;
     }
     
-    socket.emit(GameEvents.NEW_GAME_CREATED, newGame);
+    socket.emit(GameEvents.NEW_GAME_CREATED, newRoomId);
 }
 
 async function onJoinGameRequest (socket: Socket, roomId: string) : Promise<void> {
@@ -90,14 +87,16 @@ async function onDeclareName (socket : Socket, name : string) {
 
     await db.updatePlayerName(socket.id, name);
     const roomId = await db.getPlayerRoomId(socket.id);
+    
+    await emitUpdatedPlayer(socket);
     await emitUpdatedGameState(roomId);
 }
 
-async function onGuess ( socket: Socket, guessReq: EvaluationRequestData) {
-    console.log(`Guess received: ${guessReq.guess}`);
+async function onGuess ( socket: Socket, guess: string) {
+    console.log(`Guess received: ${guess}`);
 
     // Evaluate result
-    const result = await evaluateGuess(guessReq.guess);
+    const result = await evaluateGuess(guess);
     const guessResult = result.resultByPosition;
 
     // Store results
@@ -121,4 +120,9 @@ async function emitUpdatedGameState(roomId: string) : Promise<void> {
     if (gameStateData !== null) {
         io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData);
     }
+}
+
+async function emitUpdatedPlayer(socket: Socket) : Promise<void> {
+    const player = await db.getPlayer(socket.id);
+    player && socket.emit(GameEvents.UPDATE_PLAYER, player);
 }

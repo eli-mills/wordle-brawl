@@ -53,7 +53,7 @@ export async function createPlayer(socketId: string) : Promise<void> {
  * @param socketId : ID of the socket connection used by the player
  * @returns : Converted Player object, or null if key not found
  */
-async function getPlayer(socketId: string) : Promise<Player | null> {
+export async function getPlayer(socketId: string) : Promise<Player | null> {
     let player: DbPlayer | {}
     try {
         player = await redisClient.hGetAll(getRedisPlayerKey(socketId));
@@ -162,9 +162,9 @@ function getRedisGameKey(roomId: string) : string {
  * Creates a new Player entry in the DB.
  * 
  * @param socketId : ID of the socket connection used by the player
- * @returns : newly-created Game, or null if no rooms available
+ * @returns : new Game's roomId, or null if no rooms available
  */
-export async function createGame(socketId: string) : Promise<Game | null> {
+export async function createGame(socketId: string) : Promise<string | null> {
     const roomId = await getRandomRoomId();
     if (!roomId) return null;
 
@@ -182,7 +182,7 @@ export async function createGame(socketId: string) : Promise<Game | null> {
         throw err;
     }
 
-    return await getGame(roomId);
+    return roomId;
 }
 
 /**

@@ -31,17 +31,13 @@ export async function createPlayer(socketId) {
         throw err;
     }
 }
-export async function playerJoinGame(socketId, roomId) {
-    await updatePlayerRoom(socketId, roomId);
-    await addPlayerToList(socketId, roomId);
-}
 /**
  * Retrieves given player from DB.
  *
  * @param socketId : ID of the socket connection used by the player
  * @returns : Converted Player object, or null if key not found
  */
-async function getPlayer(socketId) {
+export async function getPlayer(socketId) {
     let player;
     try {
         player = await redisClient.hGetAll(getRedisPlayerKey(socketId));
@@ -93,7 +89,13 @@ export async function updatePlayerName(socketId, playerName) {
         throw err;
     }
 }
-async function updatePlayerRoom(socketId, roomId) {
+/**
+ * Assigns the given roomId and adds player to that room's playerList.
+ *
+ * @param socketId : ID of the socket connection used by the player
+ * @param roomId : ID of the room of the game the player has joined
+ */
+export async function updatePlayerRoom(socketId, roomId) {
     try {
         await redisClient.hSet(getRedisPlayerKey(socketId), "roomId", roomId);
     }
@@ -101,6 +103,7 @@ async function updatePlayerRoom(socketId, roomId) {
         console.error(`DB error when updating player ${socketId} to have roomId ${roomId}`);
         throw err;
     }
+    await addPlayerToList(socketId, roomId);
 }
 /**
  * Retrieves the given player's room.
@@ -127,7 +130,7 @@ function getRedisGameKey(roomId) {
  * Creates a new Player entry in the DB.
  *
  * @param socketId : ID of the socket connection used by the player
- * @returns : newly-created Game, or null if no rooms available
+ * @returns : new Game's roomId, or null if no rooms available
  */
 export async function createGame(socketId) {
     const roomId = await getRandomRoomId();
@@ -145,7 +148,7 @@ export async function createGame(socketId) {
         console.error(`DB error when creating game ${roomId} for player ${socketId}`);
         throw err;
     }
-    return await getGame(roomId);
+    return roomId;
 }
 /**
  * Retrieves given game from DB.

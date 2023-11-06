@@ -3,8 +3,8 @@ import Head from 'next/head'
 import { useState, useContext, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { GlobalContext } from './_app';
-import { io } from 'socket.io-client';
-import { GameEvents, Game } from '../../../common';
+import { io, Socket } from 'socket.io-client';
+import { GameEvents, Game, ServerToClientEvents, ClientToServerEvents } from '../../../common';
 
 
 export default function HomePage() {
@@ -13,10 +13,11 @@ export default function HomePage() {
     const router = useRouter();
 
     useEffect( () => {
-        const socket = io("http://eli.local:3001");
+        const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io("http://eli.local:3001");
         setSocket(socket);
-        socket.on(GameEvents.NEW_GAME_CREATED, (data: Game) => {
-            router.push(`/lobby?room=${data.roomId}`);
+
+        socket.on(GameEvents.NEW_GAME_CREATED, (roomId: string) => {
+            router.push(`/lobby?room=${roomId}`);
         });
     }, []);
 

@@ -1,15 +1,14 @@
-import { Socket } from 'socket.io-client';
-import { useContext } from 'react';
+import { useState, useContext } from 'react';
 import { GlobalContext } from '@/pages/_app';
 import { GameEvents } from '../../../common';
 
 type NameModalArgs = {
-    socket: Socket | undefined,
     setDisplayModal : (_ : boolean) => void
 }
 
-export default function NameModal({socket, setDisplayModal} : NameModalArgs) {
-    const { playerName, setName } = useContext(GlobalContext);
+export default function NameModal({setDisplayModal} : NameModalArgs) {
+    const [ playerName, setName ] = useState("");
+    const { socket } = useContext(GlobalContext);
 
     const onButtonClick = () => {
         socket?.emit(GameEvents.DECLARE_NAME, playerName);

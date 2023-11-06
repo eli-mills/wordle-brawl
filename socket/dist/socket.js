@@ -21,9 +21,9 @@ io.on('connection', async (newSocket) => {
     console.log(`User ${newSocket.id} connected.`);
     await db.createPlayer(newSocket.id);
     newSocket.on(GameEvents.REQUEST_NEW_GAME, () => onCreateGameRequest(newSocket));
-    newSocket.on(GameEvents.REQUEST_JOIN_GAME, (data) => onJoinGameRequest(newSocket, data.room));
+    newSocket.on(GameEvents.REQUEST_JOIN_GAME, (roomId) => onJoinGameRequest(newSocket, roomId));
     newSocket.on(GameEvents.DECLARE_NAME, (name) => onDeclareName(newSocket, name));
-    newSocket.on(GameEvents.GUESS, (guessReq) => onGuess(newSocket, guessReq));
+    newSocket.on(GameEvents.GUESS, (guess) => onGuess(newSocket, guess));
     newSocket.on('disconnect', () => onDisconnect(newSocket));
 });
 /************************************************
@@ -41,12 +41,12 @@ async function onDisconnect(socket) {
 }
 async function onCreateGameRequest(socket) {
     console.log("Create game request received");
-    const newGame = await db.createGame(socket.id);
-    if (newGame === null) {
+    const newRoomId = await db.createGame(socket.id);
+    if (newRoomId === null) {
         socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
         return;
     }
-    socket.emit(GameEvents.NEW_GAME_CREATED, newGame);
+    socket.emit(GameEvents.NEW_GAME_CREATED, newRoomId);
 }
 async function onJoinGameRequest(socket, roomId) {
     console.log(`Player ${socket.id} request to join room ${roomId}`);
@@ -57,7 +57,7 @@ async function onJoinGameRequest(socket, roomId) {
     }
     socket.join(roomId);
     console.log(`Player ${socket.id} successfully joined room ${roomId}`);
-    await db.playerJoinGame(socket.id, roomId);
+    await db.updatePlayerRoom(socket.id, roomId);
     await emitUpdatedGameState(roomId);
 }
 async function onDeclareName(socket, name) {
@@ -65,12 +65,13 @@ async function onDeclareName(socket, name) {
     console.log(`Name received: ${name}. Writing to db.`);
     await db.updatePlayerName(socket.id, name);
     const roomId = await db.getPlayerRoomId(socket.id);
+    await emitUpdatedPlayer(socket);
     await emitUpdatedGameState(roomId);
 }
-async function onGuess(socket, guessReq) {
-    console.log(`Guess received: ${guessReq.guess}`);
+async function onGuess(socket, guess) {
+    console.log(`Guess received: ${guess}`);
     // Evaluate result
-    const result = await evaluateGuess(guessReq.guess);
+    const result = await evaluateGuess(guess);
     const guessResult = result.resultByPosition;
     // Store results
     guessResult && await db.createGuessResult(socket.id, guessResult);
@@ -89,4 +90,8 @@ async function emitUpdatedGameState(roomId) {
     if (gameStateData !== null) {
         io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData);
     }
+}
+async function emitUpdatedPlayer(socket) {
+    const player = await db.getPlayer(socket.id);
+    player && socket.emit(GameEvents.UPDATE_PLAYER, player);
 }

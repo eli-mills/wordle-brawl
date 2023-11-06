@@ -1,7 +1,6 @@
 import { useContext, useEffect } from 'react';
 import { GlobalContext } from '@/pages/_app';
 import { 
-    EvaluationRequestData, 
     EvaluationResponseData,
     GameEvents,
     Result 
@@ -108,12 +107,10 @@ export default function Keyboard({
     }
     
     const evaluateGuess = () => {
-        const evalRequest : EvaluationRequestData = {
-            guess: guesses[currentGuessNum].join("")
-        }
+        const guess = guesses[currentGuessNum].join("");
         if (socket) {
             console.log("emitting guess");
-            socket.emit(GameEvents.GUESS, evalRequest);
+            socket.emit(GameEvents.GUESS, guess);
         };
     }
 

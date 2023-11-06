@@ -3,26 +3,23 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { GlobalContext } from './_app';
 import { useEffect, useContext, useState } from 'react';
-import { JoinRoomRequestData, Game, GameEvents } from "../../../common";
+import { GameEvents } from "../../../common";
 import NameModal from '@/components/NameModal';
 
 
 export default function LobbyPage() {
     const {
         socket, 
-        opponentList,
-        setOpponentList,
-        room,
-        setRoom
+        player, 
+        game
     } = useContext(GlobalContext);
     const router = useRouter();
     const { room: queryRoom } = router.query as {room: string};
     const [displayModal, setDisplayModal] = useState<boolean>(true);
 
     useEffect(()=>{
-        const joinRoomRequest : JoinRoomRequestData = { room: queryRoom };
         queryRoom && socket && console.log(`Sending joinRoomRequest for room ${queryRoom}`);
-        queryRoom && socket?.emit(GameEvents.REQUEST_JOIN_GAME, joinRoomRequest)
+        queryRoom && socket?.emit(GameEvents.REQUEST_JOIN_GAME, queryRoom)
     }, [queryRoom]);
 
     useEffect(()=> {
@@ -39,11 +36,11 @@ export default function LobbyPage() {
             </Head>
             <main>
                 {socket && (<div>
-                    <h1>Room {room}</h1>
+                    <h1>Room {game?.roomId}</h1>
                     <ul>
-                        {opponentList.map((player, index) => <li key={index}>{player.name}</li>)}
+                        {game?.playerList.map((currPlayer, index) => <li key={index}>{currPlayer.name}</li>)}
                     </ul>
-                    {displayModal && <NameModal socket={socket} setDisplayModal={setDisplayModal}/>}
+                    {displayModal && <NameModal setDisplayModal={setDisplayModal}/>}
                     <Link href={"/game"}>Start Game</Link>
                 </div>)}
                 {!socket && <h1>NOT CONNECTED</h1>}

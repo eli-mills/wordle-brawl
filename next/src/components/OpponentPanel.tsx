@@ -3,12 +3,12 @@ import { GlobalContext } from '@/pages/_app';
 import OpponentCard from './OpponentCard';
 
 export default function OpponentPanel() {
-    const {opponentList, playerName} = useContext(GlobalContext);
+    const { game, player } = useContext(GlobalContext);
 
     return (
         <div>
-            { opponentList.map((opponent, index) => 
-                opponent.name !== playerName && <OpponentCard key={index} player={opponent}/>
+            { game?.playerList.map((currPlayer, index) => 
+                currPlayer.name !== player?.name && <OpponentCard key={index} player={currPlayer}/>
             )}
         </div>
     )
