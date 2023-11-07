@@ -6,7 +6,6 @@ import { useEffect, useContext, useState } from 'react';
 import { GameEvents } from "../../../common";
 import NameModal from '@/components/NameModal';
 
-
 export default function LobbyPage() {
     const {
         socket, 
@@ -18,14 +17,22 @@ export default function LobbyPage() {
     const [displayModal, setDisplayModal] = useState<boolean>(true);
 
     useEffect(()=>{
-        queryRoom && socket && console.log(`Sending joinRoomRequest for room ${queryRoom}`);
         queryRoom && socket?.emit(GameEvents.REQUEST_JOIN_GAME, queryRoom)
-    }, [queryRoom]);
+    }, [queryRoom, socket]);
 
     useEffect(()=> {
-        socket?.on(GameEvents.GAME_DNE, () => alert("The requested room does not exist."));
+        socket?.on(GameEvents.GAME_DNE, () => {
+            alert("The requested room does not exist.");
+            router.push("/");
+        });
+
+        socket?.on(GameEvents.BEGIN_GAME, () => {
+            router.push("/game");
+        });
+
         return () => {
             socket?.off(GameEvents.GAME_DNE);
+            socket?.off(GameEvents.BEGIN_GAME);
         }
     }, []);
 
@@ -41,7 +48,7 @@ export default function LobbyPage() {
                         {game?.playerList.map((currPlayer, index) => <li key={index}>{currPlayer.name}</li>)}
                     </ul>
                     {displayModal && <NameModal setDisplayModal={setDisplayModal}/>}
-                    {player?.isLeader && <Link href={"/game"}>Start Game</Link>}
+                    {player?.isLeader && <button onClick={()=>socket?.emit(GameEvents.REQUEST_BEGIN_GAME)}>Start Game</button>}
                 </div>)}
                 {!socket && <h1>NOT CONNECTED</h1>}
             </main>

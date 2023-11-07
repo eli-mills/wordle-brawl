@@ -25,6 +25,7 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.DECLARE_NAME, (name) => onDeclareName(newSocket, name));
     newSocket.on(GameEvents.GUESS, (guess) => onGuess(newSocket, guess));
     newSocket.on('disconnect', () => onDisconnect(newSocket));
+    newSocket.on(GameEvents.REQUEST_BEGIN_GAME, () => onBeginGameRequest(newSocket));
 });
 /************************************************
  *                                              *
@@ -97,4 +98,8 @@ async function emitUpdatedPlayer(socket) {
     const player = await db.getPlayer(socket.id);
     console.log(`Retrieved player for update: ${JSON.stringify(player)}`);
     player && socket.emit(GameEvents.UPDATE_PLAYER, player);
+}
+async function onBeginGameRequest(socket) {
+    const roomId = await db.getPlayerRoomId(socket.id);
+    io.to(roomId).emit(GameEvents.BEGIN_GAME);
 }
