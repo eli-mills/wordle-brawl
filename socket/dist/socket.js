@@ -46,6 +46,8 @@ async function onCreateGameRequest(socket) {
         socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
         return;
     }
+    await db.setPlayerIsLeader(socket.id);
+    await emitUpdatedPlayer(socket);
     socket.emit(GameEvents.NEW_GAME_CREATED, newRoomId);
 }
 async function onJoinGameRequest(socket, roomId) {
@@ -93,5 +95,6 @@ async function emitUpdatedGameState(roomId) {
 }
 async function emitUpdatedPlayer(socket) {
     const player = await db.getPlayer(socket.id);
+    console.log(`Retrieved player for update: ${JSON.stringify(player)}`);
     player && socket.emit(GameEvents.UPDATE_PLAYER, player);
 }

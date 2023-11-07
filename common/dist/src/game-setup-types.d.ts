@@ -8,6 +8,7 @@ export type Player = {
     socketId: string;
     roomId: string;
     name: string;
+    isLeader: boolean;
     guessResultHistory: Result[][];
 };
 //# sourceMappingURL=game-setup-types.d.ts.map

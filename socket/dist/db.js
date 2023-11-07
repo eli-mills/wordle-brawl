@@ -22,6 +22,7 @@ export async function createPlayer(socketId) {
         socketId,
         roomId: "",
         name: "",
+        isLeader: "false"
     };
     try {
         await redisClient.hSet(getRedisPlayerKey(socketId), newPlayer);
@@ -51,7 +52,8 @@ export async function getPlayer(socketId) {
     const guessResultHistory = await getGuessResultHistory(socketId);
     return {
         guessResultHistory,
-        ...player
+        ...player,
+        isLeader: player.isLeader === "true"
     };
 }
 ;
@@ -104,6 +106,15 @@ export async function updatePlayerRoom(socketId, roomId) {
         throw err;
     }
     await addPlayerToList(socketId, roomId);
+}
+export async function setPlayerIsLeader(socketId) {
+    try {
+        await redisClient.hSet(getRedisPlayerKey(socketId), "isLeader", "true");
+    }
+    catch (err) {
+        console.error(`DB error when setting player ${socketId} to be leader.`);
+        throw err;
+    }
 }
 /**
  * Retrieves the given player's room.
@@ -233,7 +244,7 @@ async function getRandomRoomId() {
  * Fills database with 10000 room IDs if not already filled.
  */
 async function populateAvailableRoomIds() {
-    if (await redisClient.sCard(AVAILABLE_ROOM_IDS) === 10000) {
+    if (await redisClient.sCard(AVAILABLE_ROOM_IDS) >= 10000) {
         console.log("Not populating rooms");
         return;
     }

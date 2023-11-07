@@ -25,7 +25,9 @@ export async function initializeDbConn() : Promise<void> {
  *                                              *
  ************************************************/
 
-type DbPlayer = Omit<Player, "guessResultHistory">
+type DbPlayer = Omit<Player, "guessResultHistory" | "isLeader"> & {
+    isLeader: "true" | "false"
+}
 
 /**
  * Creates a new Player entry in the DB.
@@ -37,6 +39,7 @@ export async function createPlayer(socketId: string) : Promise<void> {
         socketId, 
         roomId: "", 
         name: "",
+        isLeader: "false"
     };
 
     try {
@@ -67,7 +70,8 @@ export async function getPlayer(socketId: string) : Promise<Player | null> {
     
     return {
         guessResultHistory,
-        ...player as DbPlayer
+        ...player as DbPlayer,
+        isLeader: (player as DbPlayer).isLeader === "true"
     }
 };
 
@@ -122,6 +126,15 @@ export async function updatePlayerRoom(socketId: string, roomId: string) : Promi
 
     await addPlayerToList(socketId, roomId);
 
+}
+
+export async function setPlayerIsLeader(socketId: string) : Promise<void> {
+    try {
+        await redisClient.hSet(getRedisPlayerKey(socketId), "isLeader", "true");
+    } catch (err) {
+        console.error(`DB error when setting player ${socketId} to be leader.`);
+        throw err;
+    }
 }
 
 /**
@@ -272,7 +285,7 @@ async function getRandomRoomId() : Promise<string | null> {
  * Fills database with 10000 room IDs if not already filled. 
  */
 async function populateAvailableRoomIds () : Promise<void> {
-    if (await redisClient.sCard(AVAILABLE_ROOM_IDS) === 10000) {
+    if (await redisClient.sCard(AVAILABLE_ROOM_IDS) >= 10000) {
         console.log("Not populating rooms");
         return;
     }

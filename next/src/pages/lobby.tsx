@@ -41,7 +41,7 @@ export default function LobbyPage() {
                         {game?.playerList.map((currPlayer, index) => <li key={index}>{currPlayer.name}</li>)}
                     </ul>
                     {displayModal && <NameModal setDisplayModal={setDisplayModal}/>}
-                    <Link href={"/game"}>Start Game</Link>
+                    {player?.isLeader && <Link href={"/game"}>Start Game</Link>}
                 </div>)}
                 {!socket && <h1>NOT CONNECTED</h1>}
             </main>
