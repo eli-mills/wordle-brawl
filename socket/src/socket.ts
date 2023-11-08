@@ -116,6 +116,7 @@ async function onBeginGameRequest(socket: Socket<ClientToServerEvents, ServerToC
 
     await db.setGameStatus(roomId, "choosing");
     await emitUpdatedGameState(roomId);
+
     io.to(roomId).emit(GameEvents.BEGIN_GAME);
 }
 

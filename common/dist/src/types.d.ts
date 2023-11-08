@@ -20,6 +20,7 @@ export type Game = {
     leader: Player;
     playerList: Player[];
     status: GameStatus;
+    chooser: Player | null;
 };
 export type Player = {
     socketId: string;

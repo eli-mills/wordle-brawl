@@ -74,7 +74,7 @@ export async function deletePlayer(socketId) {
         throw err;
     }
     await deleteGuessResultHistory(socketId);
-    await removePlayerFromList(player.roomId, socketId);
+    await removePlayerFromList(socketId, player.roomId);
 }
 /**
  * Assigns the given name to the given player in the DB.
@@ -142,7 +142,8 @@ export async function createGame(socketId) {
     const newGame = {
         roomId,
         leader: socketId,
-        status: "lobby"
+        status: "lobby",
+        chooser: ""
     };
     try {
         await redisClient.hSet(getRedisGameKey(roomId), newGame);
@@ -175,15 +176,22 @@ export async function getGame(roomId) {
         return null;
     const playerList = await getPlayerList(roomId);
     const leader = await getPlayer(game.leader);
+    const chooser = await getPlayer(game.chooser);
     if (!leader)
         throw new GameMissingDataError(`Game ${roomId} missing leader.`);
     return {
         ...game,
         roomId,
         leader,
-        playerList
+        playerList,
+        chooser
     };
 }
+/**
+ * Set game status and handle related side effects.
+ * @param roomId : ID of the room the Game is being hosted in
+ * @param status : status to set Game
+ */
 export async function setGameStatus(roomId, status) {
     try {
         await redisClient.hSet(getRedisGameKey(roomId), "status", status);
@@ -192,11 +200,21 @@ export async function setGameStatus(roomId, status) {
         console.error(`DB error when setting game ${roomId} to status ${status}`);
         throw err;
     }
+    if (status === "choosing") {
+        const newChooser = await getRandomChooserFromList(roomId);
+        try {
+            await redisClient.hSet(getRedisGameKey(roomId), "chooser", newChooser.socketId);
+        }
+        catch (err) {
+            console.error(`DB error when setting game ${roomId} to have chooser ${newChooser.socketId}`);
+            throw err;
+        }
+    }
 }
 /**
  * Removes given player from DB.
  *
- * @param roomId : ID of the room the game is being hosted in
+ * @param roomId : ID of the room the Game is being hosted in
  */
 async function deleteGame(roomId) {
     await deletePlayerList(roomId);
@@ -332,6 +350,8 @@ async function deleteGuessResultHistory(socketId) {
 function getRedisPlayerListKey(roomId) {
     return `playerList:${roomId}`;
 }
+const HAS_NOT_CHOSEN = 0;
+const HAS_CHOSEN = 1;
 /**
  * Retrieve the list of players in the given room.
  *
@@ -341,7 +361,7 @@ function getRedisPlayerListKey(roomId) {
 async function getPlayerList(roomId) {
     let playerIdList;
     try {
-        playerIdList = await redisClient.sMembers(getRedisPlayerListKey(roomId));
+        playerIdList = await redisClient.zRange(getRedisPlayerListKey(roomId), 0, -1);
     }
     catch (err) {
         console.error(`DB error when retrieving playerList for game ${roomId}`);
@@ -352,7 +372,7 @@ async function getPlayerList(roomId) {
 }
 async function addPlayerToList(socketId, roomId) {
     try {
-        await redisClient.sAdd(getRedisPlayerListKey(roomId), socketId);
+        await redisClient.zAdd(getRedisPlayerListKey(roomId), { score: HAS_NOT_CHOSEN, value: socketId });
     }
     catch (err) {
         console.error(`DB error when adding player ${socketId} to playerList ${roomId}`);
@@ -360,15 +380,29 @@ async function addPlayerToList(socketId, roomId) {
     }
 }
 /**
+ * Re-adds player to list with new score to indicate player has had a turn to choose word.
+ * @param socketId :  ID of the socket connection of the Player to remove
+ * @param roomId : ID of the room containing the Players
+ */
+async function markPlayerAsChooser(socketId, roomId) {
+    try {
+        await redisClient.zAdd(getRedisPlayerListKey(roomId), { score: HAS_CHOSEN, value: socketId });
+    }
+    catch (err) {
+        console.error(`DB error when marking ${socketId} as chooser in playerL:ist ${roomId}`);
+        throw err;
+    }
+}
+/**
  * Removes given player from given list, and handles cleanup in DB.
  *
- * @param roomId : ID of the room containing the Players
  * @param socketId :  ID of the socket connection of the Player to remove
+ * @param roomId : ID of the room containing the Players
  * @returns
  */
-async function removePlayerFromList(roomId, socketId) {
+async function removePlayerFromList(socketId, roomId) {
     try {
-        await redisClient.sRem(getRedisPlayerListKey(roomId), socketId);
+        await redisClient.zRem(getRedisPlayerListKey(roomId), socketId);
     }
     catch (err) {
         console.error(`DB error when removing player ${socketId} from playerList ${roomId}`);
@@ -379,7 +413,8 @@ async function removePlayerFromList(roomId, socketId) {
 }
 async function deleteGameIfListEmpty(roomId) {
     try {
-        if (await redisClient.sCard(getRedisPlayerListKey(roomId)) <= 0) {
+        if (await redisClient.zCard(getRedisPlayerListKey(roomId)) <= 0) {
+            console.log(`List empty, deleting game ${roomId}`);
             return await deleteGame(roomId);
         }
     }
@@ -402,7 +437,7 @@ async function replaceLeaderIfRemoved(removedSocketId, roomId) {
     // Leader deleted, replace leader
     console.log(`Player ${leaderId} was the leader, need replacement.`);
     try {
-        newLeaderId = await redisClient.sRandMember(getRedisPlayerListKey(roomId));
+        newLeaderId = await redisClient.zRandMember(getRedisPlayerListKey(roomId));
         console.log(`New leader chosen: ${newLeaderId}`);
     }
     catch (err) {
@@ -425,6 +460,27 @@ async function deletePlayerList(roomId) {
     }
     catch (err) {
         console.error(`DB error when deleting playerList ${roomId}`);
+        throw err;
+    }
+}
+/**
+ * Get a random player from the given player list to choose the next word, and marks them as previous chooser.
+ * @param roomId : ID of the room containing the Players
+ * @returns : Random member Player
+ */
+async function getRandomChooserFromList(roomId) {
+    try {
+        const nextChooserId = await redisClient.zPopMin(getRedisPlayerListKey(roomId));
+        if (!nextChooserId)
+            throw new Error(`Tried to get random Player from empty playerList ${roomId}`);
+        await markPlayerAsChooser(nextChooserId.value, roomId);
+        const player = await getPlayer(nextChooserId.value);
+        if (!player)
+            throw new Error(`Player ${nextChooserId.value} in playerList ${roomId} does not exist.`);
+        return player;
+    }
+    catch (err) {
+        console.error(`DB error when retrieving random member from playerList ${roomId}`);
         throw err;
     }
 }

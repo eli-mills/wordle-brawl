@@ -23,7 +23,8 @@ export type Game = {
     roomId: string,
     leader: Player,
     playerList: Player[],
-    status: GameStatus
+    status: GameStatus,
+    chooser: Player | null
 };
 
 export type Player = {

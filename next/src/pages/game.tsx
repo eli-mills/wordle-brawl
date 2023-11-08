@@ -6,7 +6,7 @@ import { useContext } from 'react'
 
 
 export default function GamePage() {
-    const { player } = useContext(GlobalContext);
+    const { game } = useContext(GlobalContext);
 
     return (
         <>
@@ -14,9 +14,9 @@ export default function GamePage() {
             <title>Wordle WS</title>
         </Head>
         <main>
-            <h1> {player?.name} </h1>
-            <GamePanel/>
-            <OpponentPanel/>
+            {game?.status === "playing" && <GamePanel/>}
+            {game?.status === "playing" && <OpponentPanel/>}
+            {game?.status === "choosing" && <h1> { game.chooser?.name } is choosing a word </h1>}
         </main>
         </>
     )

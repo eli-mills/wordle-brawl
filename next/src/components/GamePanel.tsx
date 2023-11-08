@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { GlobalContext } from '@/pages/_app';
 import GuessGroup from '@/components/GuessGroup';
 import Keyboard from '@/components/Keyboard';
 
 export default function GamePanel() {
+    const { player } = useContext(GlobalContext);
     const [guesses, setGuesses] = useState(
         [
             Array(5).fill(""),
@@ -31,6 +33,7 @@ export default function GamePanel() {
 
     return (
         <>
+            <h1> {player?.name} </h1>
             <GuessGroup guesses={guesses}/>
             <Keyboard {...keyboardProps}/>
         </>
