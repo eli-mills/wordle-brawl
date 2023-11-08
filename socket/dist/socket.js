@@ -47,7 +47,6 @@ async function onCreateGameRequest(socket) {
         socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
         return;
     }
-    await db.setPlayerIsLeader(socket.id);
     await emitUpdatedPlayer(socket);
     socket.emit(GameEvents.NEW_GAME_CREATED, newRoomId);
 }
@@ -83,6 +82,14 @@ async function onGuess(socket, guess) {
     socket.emit(GameEvents.EVALUATION, result);
     await emitUpdatedGameState(await db.getPlayerRoomId(socket.id));
 }
+async function onBeginGameRequest(socket) {
+    const roomId = await db.getPlayerRoomId(socket.id);
+    if (socket.id !== await db.getGameLeader(roomId))
+        return; // Requestor is not the game leader
+    await db.setGameStatus(roomId, "choosing");
+    await emitUpdatedGameState(roomId);
+    io.to(roomId).emit(GameEvents.BEGIN_GAME);
+}
 /************************************************
  *                                              *
  *                    HELPERS                   *
@@ -98,8 +105,4 @@ async function emitUpdatedPlayer(socket) {
     const player = await db.getPlayer(socket.id);
     console.log(`Retrieved player for update: ${JSON.stringify(player)}`);
     player && socket.emit(GameEvents.UPDATE_PLAYER, player);
-}
-async function onBeginGameRequest(socket) {
-    const roomId = await db.getPlayerRoomId(socket.id);
-    io.to(roomId).emit(GameEvents.BEGIN_GAME);
 }

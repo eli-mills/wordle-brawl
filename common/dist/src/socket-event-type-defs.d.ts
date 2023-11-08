@@ -1,10 +1,9 @@
 import * as GameEvents from "./game-events.js";
-import * as evalTypes from "./evaluation-types.js";
-import * as setupTypes from "./game-setup-types.js";
+import * as types from "./types.js";
 export interface ServerToClientEvents {
-    [GameEvents.EVALUATION]: (data: evalTypes.EvaluationResponseData) => void;
-    [GameEvents.UPDATE_GAME_STATE]: (data: setupTypes.Game) => void;
-    [GameEvents.UPDATE_PLAYER]: (data: setupTypes.Player) => void;
+    [GameEvents.EVALUATION]: (data: types.EvaluationResponseData) => void;
+    [GameEvents.UPDATE_GAME_STATE]: (data: types.Game) => void;
+    [GameEvents.UPDATE_PLAYER]: (data: types.Player) => void;
     [GameEvents.NEW_GAME_CREATED]: (newRoomId: string) => void;
     [GameEvents.GAME_DNE]: () => void;
     [GameEvents.NO_ROOMS_AVAILABLE]: () => void;

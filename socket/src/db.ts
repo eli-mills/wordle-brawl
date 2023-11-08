@@ -1,5 +1,5 @@
 import { createClient } from 'redis';
-import { Result, Player, Game } from '../../common';
+import { Result, Player, Game, GameStatus } from '../../common';
 
 /************************************************
  *                                              *
@@ -128,15 +128,6 @@ export async function updatePlayerRoom(socketId: string, roomId: string) : Promi
 
 }
 
-export async function setPlayerIsLeader(socketId: string) : Promise<void> {
-    try {
-        await redisClient.hSet(getRedisPlayerKey(socketId), "isLeader", "true");
-    } catch (err) {
-        console.error(`DB error when setting player ${socketId} to be leader.`);
-        throw err;
-    }
-}
-
 /**
  * Retrieves the given player's room.
  * 
@@ -186,6 +177,7 @@ export async function createGame(socketId: string) : Promise<string | null> {
     const newGame: DbGame = {
         roomId,
         leader: socketId,
+        status: "lobby"
     }
 
     try {
@@ -222,9 +214,19 @@ export async function getGame(roomId: string) : Promise<Game | null> {
     if (!leader) throw new GameMissingDataError(`Game ${roomId} missing leader.`);
 
     return {
+        ...(game as DbGame),
         roomId,
         leader,
         playerList
+    }
+}
+
+export async function setGameStatus(roomId: string, status: GameStatus) : Promise<void> {
+    try {
+        await redisClient.hSet(getRedisGameKey(roomId), "status", status);
+    } catch (err) {
+        console.error(`DB error when setting game ${roomId} to status ${status}`);
+        throw err;
     }
 }
 
@@ -250,6 +252,20 @@ export async function gameExists(roomId: string) : Promise<boolean> {
         return await redisClient.exists(getRedisGameKey(roomId)) > 0;
     } catch (err) {
         console.error(`DB error when checking whether game ${roomId} exists.`);
+        throw err;
+    }
+}
+
+/**
+ * Retrieve the given game's leader ID.
+ * @param roomId : ID of the room the game is being hosted in
+ * @returns socketID of the given game's leader
+ */
+export async function getGameLeader(roomId: string) : Promise<string> {
+    try {
+        return await redisClient.hGet(getRedisGameKey(roomId), "leader") ?? "";
+    } catch (err) {
+        console.error(`DB error when getting Game ${roomId}'s leader.`);
         throw err;
     }
 }
@@ -437,23 +453,25 @@ async function replaceLeaderIfRemoved(removedSocketId: string, roomId: string) :
         throw err;
     }
 
-    if (removedSocketId === leaderId) {
-        // Leader deleted, replace leader
-        try {
-            newLeaderId = await redisClient.sRandMember(getRedisPlayerListKey(roomId));
-        } catch (err) {
-            console.error(`DB error when retrieving new leaderId for game ${roomId}`);
-            throw err;
-        }
-        
-        try {
-            newLeaderId? 
-            await redisClient.hSet(getRedisGameKey(roomId), "leader", newLeaderId)
-            : null;
-        } catch (err) {
-            console.error(`DB error when setting player ${newLeaderId} as leader for game ${roomId}`);
-            throw err;
-        }
+    if (removedSocketId !== leaderId) return; 
+
+    // Leader deleted, replace leader
+    console.log(`Player ${leaderId} was the leader, need replacement.`);
+    try {
+        newLeaderId = await redisClient.sRandMember(getRedisPlayerListKey(roomId));
+        console.log(`New leader chosen: ${newLeaderId}`);
+    } catch (err) {
+        console.error(`DB error when retrieving new leaderId for game ${roomId}`);
+        throw err;
+    }
+    
+    try {
+        newLeaderId? 
+        await redisClient.hSet(getRedisGameKey(roomId), "leader", newLeaderId)
+        : null;
+    } catch (err) {
+        console.error(`DB error when setting player ${newLeaderId} as leader for game ${roomId}`);
+        throw err;
     }
 }
 

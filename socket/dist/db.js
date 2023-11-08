@@ -107,15 +107,6 @@ export async function updatePlayerRoom(socketId, roomId) {
     }
     await addPlayerToList(socketId, roomId);
 }
-export async function setPlayerIsLeader(socketId) {
-    try {
-        await redisClient.hSet(getRedisPlayerKey(socketId), "isLeader", "true");
-    }
-    catch (err) {
-        console.error(`DB error when setting player ${socketId} to be leader.`);
-        throw err;
-    }
-}
 /**
  * Retrieves the given player's room.
  *
@@ -151,6 +142,7 @@ export async function createGame(socketId) {
     const newGame = {
         roomId,
         leader: socketId,
+        status: "lobby"
     };
     try {
         await redisClient.hSet(getRedisGameKey(roomId), newGame);
@@ -186,10 +178,20 @@ export async function getGame(roomId) {
     if (!leader)
         throw new GameMissingDataError(`Game ${roomId} missing leader.`);
     return {
+        ...game,
         roomId,
         leader,
         playerList
     };
+}
+export async function setGameStatus(roomId, status) {
+    try {
+        await redisClient.hSet(getRedisGameKey(roomId), "status", status);
+    }
+    catch (err) {
+        console.error(`DB error when setting game ${roomId} to status ${status}`);
+        throw err;
+    }
 }
 /**
  * Removes given player from DB.
@@ -213,6 +215,20 @@ export async function gameExists(roomId) {
     }
     catch (err) {
         console.error(`DB error when checking whether game ${roomId} exists.`);
+        throw err;
+    }
+}
+/**
+ * Retrieve the given game's leader ID.
+ * @param roomId : ID of the room the game is being hosted in
+ * @returns socketID of the given game's leader
+ */
+export async function getGameLeader(roomId) {
+    try {
+        return await redisClient.hGet(getRedisGameKey(roomId), "leader") ?? "";
+    }
+    catch (err) {
+        console.error(`DB error when getting Game ${roomId}'s leader.`);
         throw err;
     }
 }
@@ -381,24 +397,26 @@ async function replaceLeaderIfRemoved(removedSocketId, roomId) {
         console.error(`DB error when retrieving game ${roomId}'s leader`);
         throw err;
     }
-    if (removedSocketId === leaderId) {
-        // Leader deleted, replace leader
-        try {
-            newLeaderId = await redisClient.sRandMember(getRedisPlayerListKey(roomId));
-        }
-        catch (err) {
-            console.error(`DB error when retrieving new leaderId for game ${roomId}`);
-            throw err;
-        }
-        try {
-            newLeaderId ?
-                await redisClient.hSet(getRedisGameKey(roomId), "leader", newLeaderId)
-                : null;
-        }
-        catch (err) {
-            console.error(`DB error when setting player ${newLeaderId} as leader for game ${roomId}`);
-            throw err;
-        }
+    if (removedSocketId !== leaderId)
+        return;
+    // Leader deleted, replace leader
+    console.log(`Player ${leaderId} was the leader, need replacement.`);
+    try {
+        newLeaderId = await redisClient.sRandMember(getRedisPlayerListKey(roomId));
+        console.log(`New leader chosen: ${newLeaderId}`);
+    }
+    catch (err) {
+        console.error(`DB error when retrieving new leaderId for game ${roomId}`);
+        throw err;
+    }
+    try {
+        newLeaderId ?
+            await redisClient.hSet(getRedisGameKey(roomId), "leader", newLeaderId)
+            : null;
+    }
+    catch (err) {
+        console.error(`DB error when setting player ${newLeaderId} as leader for game ${roomId}`);
+        throw err;
     }
 }
 async function deletePlayerList(roomId) {

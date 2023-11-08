@@ -35,7 +35,7 @@ export default function LobbyPage() {
             socket?.off(GameEvents.BEGIN_GAME);
         }
     }, []);
-
+    
     return (
         <>
             <Head>
@@ -48,7 +48,7 @@ export default function LobbyPage() {
                         {game?.playerList.map((currPlayer, index) => <li key={index}>{currPlayer.name}</li>)}
                     </ul>
                     {displayModal && <NameModal setDisplayModal={setDisplayModal}/>}
-                    {player?.isLeader && <button onClick={()=>socket?.emit(GameEvents.REQUEST_BEGIN_GAME)}>Start Game</button>}
+                    {player?.name && (player?.socketId === game?.leader.socketId) && <button onClick={()=>socket?.emit(GameEvents.REQUEST_BEGIN_GAME)}>Start Game</button>}
                 </div>)}
                 {!socket && <h1>NOT CONNECTED</h1>}
             </main>
