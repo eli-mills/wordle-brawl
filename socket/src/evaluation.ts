@@ -9,13 +9,14 @@ interface WordValidator {
     validateWord : (guess : string) => Promise<boolean>
 }
 
-class FileWordValidator implements WordValidator {
+export class FileWordValidator implements WordValidator {
     constructor (private readonly filePath : string) { }
-    validateWord = async (guess : string) => {
+
+    async validateWord(wordToValidate : string) : Promise<boolean> {
         const file = await fsPromises.open(this.filePath);
         try {
-            for await (const word of file.readLines()) {
-                if (word.toUpperCase() === guess) return true;
+            for await (const validWord of file.readLines()) {
+                if (validWord.toUpperCase() === wordToValidate.toUpperCase()) return true;
             }
             return false;
 

@@ -1,15 +1,15 @@
 import { promises as fsPromises } from 'fs';
 import path from 'path';
-class FileWordValidator {
+export class FileWordValidator {
     filePath;
     constructor(filePath) {
         this.filePath = filePath;
     }
-    validateWord = async (guess) => {
+    async validateWord(wordToValidate) {
         const file = await fsPromises.open(this.filePath);
         try {
-            for await (const word of file.readLines()) {
-                if (word.toUpperCase() === guess)
+            for await (const validWord of file.readLines()) {
+                if (validWord.toUpperCase() === wordToValidate.toUpperCase())
                     return true;
             }
             return false;
@@ -17,7 +17,8 @@ class FileWordValidator {
         finally {
             file.close();
         }
-    };
+    }
+    ;
 }
 async function getSolution() {
     return "BAGEL";

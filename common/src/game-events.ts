@@ -4,6 +4,7 @@ export const GUESS = "guess"
 export const REQUEST_NEW_GAME = "request-new-game";
 export const REQUEST_JOIN_GAME = "request-join-game";
 export const REQUEST_BEGIN_GAME = "request-begin-game";
+export const CHECK_CHOSEN_WORD_VALID = "check-chosen-word-valid";
 
 // Server to client
 export const EVALUATION = "evaluation";

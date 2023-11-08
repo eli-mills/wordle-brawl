@@ -1,23 +1,32 @@
 import Head from 'next/head'
 import GamePanel from '@/components/GamePanel'
 import OpponentPanel from '@/components/OpponentPanel'
+import ChoosingPanel from '@/components/ChoosingPanel'
 import { GlobalContext } from './_app'
 import { useContext } from 'react'
 
 
 export default function GamePage() {
-    const { game } = useContext(GlobalContext);
+    const { game, player } = useContext(GlobalContext);
 
     return (
         <>
-        <Head>
-            <title>Wordle WS</title>
-        </Head>
-        <main>
-            {game?.status === "playing" && <GamePanel/>}
-            {game?.status === "playing" && <OpponentPanel/>}
-            {game?.status === "choosing" && <h1> { game.chooser?.name } is choosing a word </h1>}
-        </main>
+            <Head>
+                <title>Wordle WS</title>
+            </Head>
+            <main>
+                { game?.status === "playing" && 
+                    <>
+                        <GamePanel/> 
+                        <OpponentPanel />
+                    </>
+                }
+                { game?.status === "choosing" && (
+                    game?.chooser?.socketId !== player?.socketId ? 
+                    <h1> { game.chooser?.name } is choosing a word </h1> :
+                    <ChoosingPanel />
+                )}
+            </main>
         </>
     )
 }

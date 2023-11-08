@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import * as db from "./db.js";
 import { GameEvents, } from "../../common/dist/index.js";
-import { evaluateGuess } from "./evaluation.js";
+import { evaluateGuess, FileWordValidator } from "./evaluation.js";
 /************************************************
  *                                              *
  *                CONFIGURATION                 *
@@ -26,6 +26,7 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.GUESS, (guess) => onGuess(newSocket, guess));
     newSocket.on('disconnect', () => onDisconnect(newSocket));
     newSocket.on(GameEvents.REQUEST_BEGIN_GAME, () => onBeginGameRequest(newSocket));
+    newSocket.on(GameEvents.CHECK_CHOSEN_WORD_VALID, onCheckChosenWordValid);
 });
 /************************************************
  *                                              *
@@ -89,6 +90,11 @@ async function onBeginGameRequest(socket) {
     await db.setGameStatus(roomId, "choosing");
     await emitUpdatedGameState(roomId);
     io.to(roomId).emit(GameEvents.BEGIN_GAME);
+}
+async function onCheckChosenWordValid(word, callback) {
+    const validator = new FileWordValidator("data/answers.txt");
+    const wordIsValid = await validator.validateWord(word);
+    callback(wordIsValid);
 }
 /************************************************
  *                                              *

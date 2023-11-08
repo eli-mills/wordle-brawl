@@ -6,7 +6,7 @@ import {
     ClientToServerEvents,
     ServerToClientEvents,
 } from "../../common/dist/index.js"
-import { evaluateGuess } from "./evaluation.js"
+import { evaluateGuess, FileWordValidator } from "./evaluation.js"
 
 
 /************************************************
@@ -34,6 +34,7 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.GUESS, (guess: string) => onGuess(newSocket, guess));
     newSocket.on('disconnect', () => onDisconnect(newSocket));
     newSocket.on(GameEvents.REQUEST_BEGIN_GAME, () => onBeginGameRequest(newSocket));
+    newSocket.on(GameEvents.CHECK_CHOSEN_WORD_VALID, onCheckChosenWordValid);
 });
 
 
@@ -120,6 +121,11 @@ async function onBeginGameRequest(socket: Socket<ClientToServerEvents, ServerToC
     io.to(roomId).emit(GameEvents.BEGIN_GAME);
 }
 
+async function onCheckChosenWordValid(word: string, callback: (isValid: boolean) => void) : Promise<void> {
+    const validator = new FileWordValidator("data/answers.txt");
+    const wordIsValid = await validator.validateWord(word);
+    callback(wordIsValid);
+}
 
 /************************************************
  *                                              *
