@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { GlobalContext } from '@/pages/_app';
 import GuessGroup from '@/components/GuessGroup';
 import Keyboard from '@/components/Keyboard';
+import style from '@/styles/GamePanel.module.css';
 
 export default function GamePanel() {
     const { player } = useContext(GlobalContext);
@@ -32,10 +33,10 @@ export default function GamePanel() {
     }
 
     return (
-        <>
+        <div className={style.gamePanel}>
             <h1> {player?.name} </h1>
             <GuessGroup guesses={guesses}/>
             <Keyboard {...keyboardProps}/>
-        </>
+        </div>
     );
 }
