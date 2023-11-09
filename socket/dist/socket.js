@@ -1,8 +1,8 @@
-import { Server } from "socket.io";
-import { createServer } from "http";
-import * as db from "./db.js";
-import { GameEvents, } from "../../common/dist/index.js";
-import { evaluateGuess, FileWordValidator, ALLOWED_ANSWERS_PATH } from "./evaluation.js";
+import { Server } from 'socket.io';
+import { createServer } from 'http';
+import * as db from './db.js';
+import { GameEvents, } from '../../common/dist/index.js';
+import { evaluateGuess, FileWordValidator, ALLOWED_ANSWERS_PATH, } from './evaluation.js';
 /************************************************
  *                                              *
  *                CONFIGURATION                 *
@@ -13,8 +13,8 @@ export const httpServer = createServer();
 export const io = new Server(httpServer, {
     cors: {
         origin: process.env.CORS_ORIGIN,
-        methods: ["GET", "POST"]
-    }
+        methods: ['GET', 'POST'],
+    },
 });
 // Configure socket event listeners
 io.on('connection', async (newSocket) => {
@@ -43,7 +43,7 @@ async function onDisconnect(socket) {
     emitUpdatedGameState(roomId);
 }
 async function onCreateGameRequest(socket) {
-    console.log("Create game request received");
+    console.log('Create game request received');
     const newRoomId = await db.createGame(socket.id);
     if (newRoomId === null) {
         socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
@@ -54,7 +54,7 @@ async function onCreateGameRequest(socket) {
 }
 async function onJoinGameRequest(socket, roomId) {
     console.log(`Player ${socket.id} request to join room ${roomId}`);
-    if (!await db.gameExists(roomId)) {
+    if (!(await db.gameExists(roomId))) {
         console.log(`Game ${roomId} does not exist`);
         socket.emit(GameEvents.GAME_DNE);
         return;
@@ -79,15 +79,15 @@ async function onGuess(socket, guess) {
     const result = await evaluateGuess(guess, roomId);
     const guessResult = result.resultByPosition;
     // Store results
-    guessResult && await db.createGuessResult(socket.id, guessResult);
+    guessResult && (await db.createGuessResult(socket.id, guessResult));
     // Send results
-    console.log("Sending results");
+    console.log('Sending results');
     socket.emit(GameEvents.EVALUATION, result);
     await emitUpdatedGameState(await db.getPlayerRoomId(socket.id));
 }
 async function onBeginGameRequest(socket) {
     const roomId = await db.getPlayerRoomId(socket.id);
-    if (socket.id !== await db.getGameLeader(roomId))
+    if (socket.id !== (await db.getGameLeader(roomId)))
         return; // Requestor is not the game leader
     await db.setGameStatusChoosing(roomId);
     await emitUpdatedGameState(roomId);

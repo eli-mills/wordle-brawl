@@ -9,6 +9,7 @@ export type EvaluationResponseData = {
     resultByPosition?: Result[],
     resultByLetter?: Record<string, Result>,
     accepted: boolean,
+    correct: boolean
 }
 
 

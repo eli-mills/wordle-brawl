@@ -66,15 +66,26 @@ export async function evaluateGuess(
     const validator = new FileWordValidator(filePath)
     const accepted = await validator.validateWord(guess)
 
-    if (!accepted) return { accepted }
+    if (!accepted) return { accepted, correct: false }
 
-    const solution = (await getCurrentAnswer(roomId)).toUpperCase().split('')
+    const solution = (await getCurrentAnswer(roomId)).toUpperCase()
+    const solutionSplit = solution.split('')
+
+    if (guess === solution)
+        return {
+            accepted,
+            correct: true,
+            resultByLetter: Object.fromEntries(
+                solutionSplit.map((letter) => [letter, 'hit'])
+            ),
+            resultByPosition: new Array(5).fill('hit'),
+        }
 
     const resultByPosition = Array<Result>(5).fill('miss')
     const resultByLetter: Record<string, Result> = {}
 
-    mutateIfHits(guess, solution, resultByPosition, resultByLetter)
-    mutateIfHas(guess, solution, resultByPosition, resultByLetter)
+    mutateIfHits(guess, solutionSplit, resultByPosition, resultByLetter)
+    mutateIfHas(guess, solutionSplit, resultByPosition, resultByLetter)
 
-    return { resultByPosition, resultByLetter, accepted }
+    return { resultByPosition, resultByLetter, accepted, correct: false }
 }
