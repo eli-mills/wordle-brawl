@@ -4,6 +4,7 @@ export declare const REQUEST_NEW_GAME = "request-new-game";
 export declare const REQUEST_JOIN_GAME = "request-join-game";
 export declare const REQUEST_BEGIN_GAME = "request-begin-game";
 export declare const CHECK_CHOSEN_WORD_VALID = "check-chosen-word-valid";
+export declare const CHOOSE_WORD = "choose-word";
 export declare const EVALUATION = "evaluation";
 export declare const UPDATE_GAME_STATE = "update-game-state";
 export declare const UPDATE_PLAYER = "update-player";

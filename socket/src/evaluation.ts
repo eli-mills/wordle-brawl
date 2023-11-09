@@ -4,10 +4,14 @@ import {
     EvaluationResponseData, 
     Result
 } from '../../common/dist/index.js';
+import { getCurrentAnswer } from './db.js';
 
 interface WordValidator {
     validateWord : (guess : string) => Promise<boolean>
 }
+
+const ALLOWED_GUESSES_PATH = "data/allowed.txt";
+export const ALLOWED_ANSWERS_PATH = "data/answers.txt";
 
 export class FileWordValidator implements WordValidator {
     constructor (private readonly filePath : string) { }
@@ -24,10 +28,6 @@ export class FileWordValidator implements WordValidator {
             file.close();
         }
     };
-}
-
-async function getSolution () : Promise<string> {
-    return "BAGEL";
 }
 
 function mutateIfHits(
@@ -64,15 +64,15 @@ function mutateIfHas(
 
 }
 
-export async function evaluateGuess (guess: string) : Promise<EvaluationResponseData> {
+export async function evaluateGuess (guess: string, roomId: string) : Promise<EvaluationResponseData> {
 
-    const filePath = path.join(process.cwd(),"data/allowed.txt");
+    const filePath = path.join(process.cwd(), ALLOWED_GUESSES_PATH);
     const validator = new FileWordValidator(filePath);
     const accepted = await validator.validateWord(guess);
 
     if (!accepted) return {accepted};
     
-    const solution = (await getSolution()).split("");
+    const solution = (await getCurrentAnswer(roomId)).toUpperCase().split("");
 
     const resultByPosition = Array<Result>(5).fill("miss");
     const resultByLetter : Record<string, Result> = {};

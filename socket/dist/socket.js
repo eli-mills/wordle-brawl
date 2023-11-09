@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import * as db from "./db.js";
 import { GameEvents, } from "../../common/dist/index.js";
-import { evaluateGuess, FileWordValidator } from "./evaluation.js";
+import { evaluateGuess, FileWordValidator, ALLOWED_ANSWERS_PATH } from "./evaluation.js";
 /************************************************
  *                                              *
  *                CONFIGURATION                 *
@@ -27,6 +27,7 @@ io.on('connection', async (newSocket) => {
     newSocket.on('disconnect', () => onDisconnect(newSocket));
     newSocket.on(GameEvents.REQUEST_BEGIN_GAME, () => onBeginGameRequest(newSocket));
     newSocket.on(GameEvents.CHECK_CHOSEN_WORD_VALID, onCheckChosenWordValid);
+    newSocket.on(GameEvents.CHOOSE_WORD, (word) => onChooseWord(newSocket, word));
 });
 /************************************************
  *                                              *
@@ -74,7 +75,8 @@ async function onDeclareName(socket, name) {
 async function onGuess(socket, guess) {
     console.log(`Guess received: ${guess}`);
     // Evaluate result
-    const result = await evaluateGuess(guess);
+    const roomId = await db.getPlayerRoomId(socket.id);
+    const result = await evaluateGuess(guess, roomId);
     const guessResult = result.resultByPosition;
     // Store results
     guessResult && await db.createGuessResult(socket.id, guessResult);
@@ -87,14 +89,23 @@ async function onBeginGameRequest(socket) {
     const roomId = await db.getPlayerRoomId(socket.id);
     if (socket.id !== await db.getGameLeader(roomId))
         return; // Requestor is not the game leader
-    await db.setGameStatus(roomId, "choosing");
+    await db.setGameStatusChoosing(roomId);
     await emitUpdatedGameState(roomId);
     io.to(roomId).emit(GameEvents.BEGIN_GAME);
 }
 async function onCheckChosenWordValid(word, callback) {
-    const validator = new FileWordValidator("data/answers.txt");
-    const wordIsValid = await validator.validateWord(word);
+    const wordIsValid = await validateAnswerWord(word);
     callback(wordIsValid);
+}
+async function onChooseWord(socket, word) {
+    const wordIsValid = await validateAnswerWord(word);
+    if (!wordIsValid) {
+        console.error(`Socket server error: player ${socket} submitted invalid answer word ${word}`);
+        return;
+    }
+    const roomId = await db.getPlayerRoomId(socket.id);
+    await db.setGameStatusPlaying(roomId, word);
+    await emitUpdatedGameState(roomId);
 }
 /************************************************
  *                                              *
@@ -111,4 +122,8 @@ async function emitUpdatedPlayer(socket) {
     const player = await db.getPlayer(socket.id);
     console.log(`Retrieved player for update: ${JSON.stringify(player)}`);
     player && socket.emit(GameEvents.UPDATE_PLAYER, player);
+}
+async function validateAnswerWord(word) {
+    const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH);
+    return await validator.validateWord(word);
 }

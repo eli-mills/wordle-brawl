@@ -24,7 +24,8 @@ export type Game = {
     leader: Player,
     playerList: Player[],
     status: GameStatus,
-    chooser: Player | null
+    chooser: Player | null,
+    currentAnswer: string
 };
 
 export type Player = {

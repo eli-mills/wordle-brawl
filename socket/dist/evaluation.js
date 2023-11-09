@@ -1,5 +1,8 @@
 import { promises as fsPromises } from 'fs';
 import path from 'path';
+import { getCurrentAnswer } from './db.js';
+const ALLOWED_GUESSES_PATH = "data/allowed.txt";
+export const ALLOWED_ANSWERS_PATH = "data/answers.txt";
 export class FileWordValidator {
     filePath;
     constructor(filePath) {
@@ -20,9 +23,6 @@ export class FileWordValidator {
     }
     ;
 }
-async function getSolution() {
-    return "BAGEL";
-}
 function mutateIfHits(guess, solution, byPosition, byLetter) {
     for (let i = 0; i < 5; ++i) {
         byLetter[guess[i]] = "miss";
@@ -42,13 +42,13 @@ function mutateIfHas(guess, solution, byPosition, byLetter) {
         }
     }
 }
-export async function evaluateGuess(guess) {
-    const filePath = path.join(process.cwd(), "data/allowed.txt");
+export async function evaluateGuess(guess, roomId) {
+    const filePath = path.join(process.cwd(), ALLOWED_GUESSES_PATH);
     const validator = new FileWordValidator(filePath);
     const accepted = await validator.validateWord(guess);
     if (!accepted)
         return { accepted };
-    const solution = (await getSolution()).split("");
+    const solution = (await getCurrentAnswer(roomId)).toUpperCase().split("");
     const resultByPosition = Array(5).fill("miss");
     const resultByLetter = {};
     mutateIfHits(guess, solution, resultByPosition, resultByLetter);

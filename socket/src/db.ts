@@ -179,7 +179,8 @@ export async function createGame(socketId: string) : Promise<string | null> {
         roomId,
         leader: socketId,
         status: "lobby",
-        chooser: ""
+        chooser: "",
+        currentAnswer: ""
     }
 
     try {
@@ -226,26 +227,62 @@ export async function getGame(roomId: string) : Promise<Game | null> {
 }
 
 /**
- * Set game status and handle related side effects.
+ * Set game status to choosing and handles side effects.
  * @param roomId : ID of the room the Game is being hosted in
- * @param status : status to set Game
  */
-export async function setGameStatus(roomId: string, status: GameStatus) : Promise<void> {
+export async function setGameStatusChoosing(roomId: string) : Promise<void> {
+    const choosingStatus : GameStatus = "choosing";
     try {
-        await redisClient.hSet(getRedisGameKey(roomId), "status", status);
+        await redisClient.hSet(getRedisGameKey(roomId), "status", choosingStatus);
     } catch (err) {
-        console.error(`DB error when setting game ${roomId} to status ${status}`);
+        console.error(`DB error when setting game ${roomId} to ${choosingStatus} status`);
         throw err;
     }
 
-    if (status === "choosing") {
-        const newChooser = await getRandomChooserFromList(roomId);
-        try {
-            await redisClient.hSet(getRedisGameKey(roomId), "chooser", newChooser.socketId);
-        } catch (err) {
-            console.error(`DB error when setting game ${roomId} to have chooser ${newChooser.socketId}`);
-            throw err;
-        }
+    await pickRandomChooser(roomId);
+    
+}
+
+async function pickRandomChooser(roomId: string) : Promise<void> {
+    const newChooser = await getRandomChooserFromList(roomId);
+    try {
+        await redisClient.hSet(getRedisGameKey(roomId), "chooser", newChooser.socketId);
+    } catch (err) {
+        console.error(`DB error when setting game ${roomId} to have chooser ${newChooser.socketId}`);
+        throw err;
+    }
+}
+
+export async function setGameStatusPlaying(roomId: string, chosenAnswer: string) : Promise<void> {
+    const playingStatus : GameStatus = "playing";
+    try {
+        await redisClient.hSet(getRedisGameKey(roomId), "status", playingStatus);
+    } catch (err) {
+        console.error(`DB error when setting game ${roomId} to ${playingStatus} status`);
+        throw err;
+    }
+
+    await setCurrentAnswer(roomId, chosenAnswer);
+}
+
+async function setCurrentAnswer(roomId: string, chosenAnswer: string) : Promise<void> {
+    try {
+        console.log(`Saving answer ${chosenAnswer} to db for game ${roomId}`);
+        await redisClient.hSet(getRedisGameKey(roomId), "currentAnswer", chosenAnswer.toUpperCase());
+    } catch (err) {
+        console.error(`DB error when setting currentAnswer for game ${roomId} to ${chosenAnswer}`);
+        throw err;
+    }
+}
+
+export async function getCurrentAnswer(roomId: string) : Promise<string> {
+    try {
+        const answer = await redisClient.hGet(getRedisGameKey(roomId), "currentAnswer");
+        if (!answer) throw new Error(`Answer for game ${roomId} could not be retrieved.`);
+        return answer;
+    } catch (err) {
+        console.error(`DB error when retrieving answer for game ${roomId}`);
+        throw err;
     }
 }
 

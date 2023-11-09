@@ -21,6 +21,7 @@ export type Game = {
     playerList: Player[];
     status: GameStatus;
     chooser: Player | null;
+    currentAnswer: string;
 };
 export type Player = {
     socketId: string;
