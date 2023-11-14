@@ -1,10 +1,12 @@
 export const EFFICIENCY_POINTS: Record<number, number> = {
-    1: 30,
-    2: 20,
-    3: 15,
-    4: 10,
-    5: 5,
-    6: 1,
+    1: 300,
+    2: 200,
+    3: 150,
+    4: 100,
+    5: 50,
+    6: 10,
 }
 
-export const SPEED_BONUS = 10
+export const SPEED_BONUS = 100
+
+export const MAX_CHOOSER_POINTS = 300

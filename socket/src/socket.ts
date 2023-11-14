@@ -11,7 +11,11 @@ import {
     FileWordValidator,
     ALLOWED_ANSWERS_PATH,
 } from './evaluation.js'
-import { EFFICIENCY_POINTS, SPEED_BONUS } from './point-values.js'
+import {
+    EFFICIENCY_POINTS,
+    SPEED_BONUS,
+    MAX_CHOOSER_POINTS,
+} from './point-values.js'
 
 /************************************************
  *                                              *
@@ -123,6 +127,10 @@ async function onGuess(socket: Socket, guess: string): Promise<void> {
     result.resultByPosition &&
         (await db.createGuessResult(socket.id, result.resultByPosition))
 
+    if (result.accepted) {
+        await rewardPointsToChooser(socket)
+    }
+
     // Handle solve
     if (result.correct) {
         await rewardPointsToPlayer(socket)
@@ -227,10 +235,24 @@ async function allPlayersHaveSolved(roomId: string): Promise<boolean> {
 
 async function resetForNewRound(roomId: string): Promise<void> {
     await db.setGameStatusChoosing(roomId)
-    const game = await db.getGame(roomId);
+    const game = await db.getGame(roomId)
     if (game) {
-        game.speedBonusWinner = null;
-        await db.updateGame(game);
+        game.speedBonusWinner = null
+        await db.updateGame(game)
     }
     await db.resetPlayersSolved(roomId)
+}
+
+async function rewardPointsToChooser(socket: Socket): Promise<void> {
+    const player = await db.getPlayer(socket.id)
+    const game = await db.getGame(player?.roomId ?? '')
+
+    if (!player || !game || !game.chooser) return
+
+    if (player.guessResultHistory.length <= 1) return
+
+    const maxGuesses = 5 * (Object.keys(game.playerList).length - 1)
+    const pointsPerGuess = MAX_CHOOSER_POINTS / maxGuesses
+
+    await db.addToPlayerScore(game.chooser.socketId, pointsPerGuess)
 }
