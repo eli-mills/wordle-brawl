@@ -11,6 +11,7 @@ import {
     FileWordValidator,
     ALLOWED_ANSWERS_PATH,
 } from './evaluation.js'
+import { EFFICIENCY_POINTS, SPEED_BONUS } from './point-values.js'
 
 /************************************************
  *                                              *
@@ -119,14 +120,18 @@ async function onGuess(socket: Socket, guess: string) {
     // Evaluate result
     const roomId = await db.getPlayerRoomId(socket.id)
     const result = await evaluateGuess(guess, roomId)
-    const guessResult = result.resultByPosition
 
-    // Store results
-    guessResult && (await db.createGuessResult(socket.id, guessResult))
+    result.resultByPosition &&
+        (await db.createGuessResult(socket.id, result.resultByPosition))
 
-    // Send results
+    // Handle solve
+    if (result.correct) {
+        rewardPointsToPlayer(socket)
+    }
+
     console.log('Sending results')
     socket.emit(GameEvents.EVALUATION, result)
+    await emitUpdatedPlayer(socket)
     await emitUpdatedGameState(await db.getPlayerRoomId(socket.id))
 }
 
@@ -185,4 +190,33 @@ async function emitUpdatedPlayer(socket: Socket): Promise<void> {
 async function validateAnswerWord(word: string): Promise<boolean> {
     const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH)
     return await validator.validateWord(word)
+}
+
+/**
+ * Rewards points and updates state after Player solves game.
+ *
+ * @param socket
+ */
+async function rewardPointsToPlayer(socket: Socket): Promise<void> {
+    const player = await db.getPlayer(socket.id)
+    if (!player || player.guessResultHistory.length === 0) return
+
+    const roomId = await db.getPlayerRoomId(socket.id)
+    const game = await db.getGame(roomId)
+
+    // Add efficiency points
+    const efficiencyPoints = EFFICIENCY_POINTS[player.guessResultHistory.length]
+    await db.addToPlayerScore(socket.id, efficiencyPoints)
+
+    // Add speed bonus
+    if (!game) return
+    if (!game.speedBonusWinner) {
+        game.speedBonusWinner = player
+        await db.addToPlayerScore(socket.id, SPEED_BONUS)
+        await db.updateGame(game)
+    }
+
+    // Update player
+    player.solved = true
+    await db.updatePlayer(player)
 }

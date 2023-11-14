@@ -23,6 +23,7 @@ export type Game = {
     status: GameStatus;
     chooser: Player | null;
     currentAnswer: string;
+    speedBonusWinner: Player | null;
 };
 export type Player = {
     socketId: string;
@@ -30,5 +31,7 @@ export type Player = {
     name: string;
     isLeader: boolean;
     guessResultHistory: Result[][];
+    score: number;
+    solved: boolean;
 };
 //# sourceMappingURL=types.d.ts.map

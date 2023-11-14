@@ -36,7 +36,8 @@ export default function GamePanel() {
         <div className={style.gamePanel}>
             <h1> {player?.name} </h1>
             <GuessGroup guesses={guesses}/>
-            <Keyboard {...keyboardProps}/>
+            <Keyboard {...keyboardProps} />
+            <h2> Score: {player?.score} </h2>
         </div>
     );
 }
