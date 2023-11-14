@@ -126,7 +126,7 @@ async function onGuess(socket: Socket, guess: string) {
 
     // Handle solve
     if (result.correct) {
-        rewardPointsToPlayer(socket)
+        await rewardPointsToPlayer(socket)
     }
 
     console.log('Sending results')
@@ -183,7 +183,6 @@ async function emitUpdatedGameState(roomId: string): Promise<void> {
 
 async function emitUpdatedPlayer(socket: Socket): Promise<void> {
     const player = await db.getPlayer(socket.id)
-    console.log(`Retrieved player for update: ${JSON.stringify(player)}`)
     player && socket.emit(GameEvents.UPDATE_PLAYER, player)
 }
 
@@ -216,7 +215,5 @@ async function rewardPointsToPlayer(socket: Socket): Promise<void> {
         await db.updateGame(game)
     }
 
-    // Update player
-    player.solved = true
-    await db.updatePlayer(player)
+    await db.setPlayerHasSolved(socket.id)
 }

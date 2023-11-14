@@ -96,11 +96,15 @@ function convertPlayerToDbPlayer(player: Player): DbPlayer {
 }
 
 export async function updatePlayer(player: Player): Promise<void> {
-    const dbPlayer = convertPlayerToDbPlayer(player);
+    const dbPlayer = convertPlayerToDbPlayer(player)
     try {
-        redisClient.hSet(getRedisPlayerKey(player.socketId), dbPlayer);
+        redisClient.hSet(getRedisPlayerKey(player.socketId), dbPlayer)
     } catch (err) {
-        console.error(`DB error when setting player ${player.socketId} to be ${JSON.stringify(dbPlayer)}`);
+        console.error(
+            `DB error when setting player ${
+                player.socketId
+            } to be ${JSON.stringify(dbPlayer)}`
+        )
     }
 
     // TODO: update guessResultHistory
@@ -197,15 +201,28 @@ export async function addToPlayerScore(
     numberOfPoints: number
 ): Promise<void> {
     try {
-        await redisClient.hIncrBy(
+        console.log(
+            `Adding ${numberOfPoints} points to player ${socketId}'s score.`
+        )
+        const newScore = await redisClient.hIncrBy(
             getRedisPlayerKey(socketId),
             'score',
             numberOfPoints
         )
+        console.log(`New score: ${newScore}`)
     } catch (err) {
         console.error(
             `DB error when incrementing player ${socketId}'s score by ${numberOfPoints}`
         )
+        throw err
+    }
+}
+
+export async function setPlayerHasSolved(socketId: string): Promise<void> {
+    try {
+        await redisClient.hSet(getRedisPlayerKey(socketId), 'solved', 'true')
+    } catch (err) {
+        console.error(`DB error when setting player ${socketId} as solved.`)
         throw err
     }
 }

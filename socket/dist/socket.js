@@ -82,7 +82,7 @@ async function onGuess(socket, guess) {
         (await db.createGuessResult(socket.id, result.resultByPosition));
     // Handle solve
     if (result.correct) {
-        rewardPointsToPlayer(socket);
+        await rewardPointsToPlayer(socket);
     }
     console.log('Sending results');
     socket.emit(GameEvents.EVALUATION, result);
@@ -124,7 +124,6 @@ async function emitUpdatedGameState(roomId) {
 }
 async function emitUpdatedPlayer(socket) {
     const player = await db.getPlayer(socket.id);
-    console.log(`Retrieved player for update: ${JSON.stringify(player)}`);
     player && socket.emit(GameEvents.UPDATE_PLAYER, player);
 }
 async function validateAnswerWord(word) {
@@ -153,7 +152,5 @@ async function rewardPointsToPlayer(socket) {
         await db.addToPlayerScore(socket.id, SPEED_BONUS);
         await db.updateGame(game);
     }
-    // Update player
-    player.solved = true;
-    await db.updatePlayer(player);
+    await db.setPlayerHasSolved(socket.id);
 }

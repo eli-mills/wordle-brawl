@@ -152,10 +152,21 @@ export async function getPlayerRoomId(socketId) {
  */
 export async function addToPlayerScore(socketId, numberOfPoints) {
     try {
-        await redisClient.hIncrBy(getRedisPlayerKey(socketId), 'score', numberOfPoints);
+        console.log(`Adding ${numberOfPoints} points to player ${socketId}'s score.`);
+        const newScore = await redisClient.hIncrBy(getRedisPlayerKey(socketId), 'score', numberOfPoints);
+        console.log(`New score: ${newScore}`);
     }
     catch (err) {
         console.error(`DB error when incrementing player ${socketId}'s score by ${numberOfPoints}`);
+        throw err;
+    }
+}
+export async function setPlayerHasSolved(socketId) {
+    try {
+        await redisClient.hSet(getRedisPlayerKey(socketId), 'solved', 'true');
+    }
+    catch (err) {
+        console.error(`DB error when setting player ${socketId} as solved.`);
         throw err;
     }
 }

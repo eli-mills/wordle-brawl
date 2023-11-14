@@ -34,7 +34,7 @@ export default function LobbyPage() {
             socket?.off(GameEvents.GAME_DNE);
             socket?.off(GameEvents.BEGIN_GAME);
         }
-    }, []);
+    }, [router, socket]);
     
     return (
         <>
