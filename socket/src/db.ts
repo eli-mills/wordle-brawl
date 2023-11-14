@@ -218,9 +218,16 @@ export async function addToPlayerScore(
     }
 }
 
-export async function setPlayerHasSolved(socketId: string): Promise<void> {
+export async function setPlayerHasSolved(
+    socketId: string,
+    playerHasSolved: 'true' | 'false'
+): Promise<void> {
     try {
-        await redisClient.hSet(getRedisPlayerKey(socketId), 'solved', 'true')
+        await redisClient.hSet(
+            getRedisPlayerKey(socketId),
+            'solved',
+            playerHasSolved
+        )
     } catch (err) {
         console.error(`DB error when setting player ${socketId} as solved.`)
         throw err
@@ -612,7 +619,7 @@ const HAS_CHOSEN = 1
  * @param roomId : ID of the room the game is being hosted in
  * @returns : list of converted Player objects within given room, or [] if not found
  */
-async function getPlayerList(roomId: string): Promise<Player[]> {
+async function getPlayerList(roomId: string): Promise<Record<string, Player>> {
     let playerIdList: string[]
     try {
         playerIdList = await redisClient.zRange(
@@ -625,11 +632,13 @@ async function getPlayerList(roomId: string): Promise<Player[]> {
         throw err
     }
 
-    const playerList = await Promise.all(
-        playerIdList.map(async (id: string) => await getPlayer(id))
-    )
+    const output: Record<string, Player> = {};
+    for (const socketId of playerIdList) {
+        const player = await getPlayer(socketId)
+        if (player) output[socketId] = player;
+    }
 
-    return playerList.filter((player) => player !== null) as Player[]
+    return output
 }
 
 async function addPlayerToList(
@@ -788,5 +797,18 @@ async function getRandomChooserFromList(roomId: string): Promise<Player> {
             `DB error when retrieving random member from playerList ${roomId}`
         )
         throw err
+    }
+}
+
+/**
+ * Resets 'solved' status for every player in list and deletes each guessResultHistory
+ * 
+ * @param roomId 
+ */
+export async function resetPlayersSolved(roomId: string): Promise<void> {
+    const playerList = await getPlayerList(roomId)
+    for (const player of Object.values(playerList)) {
+        await setPlayerHasSolved(player.socketId, 'false')
+        await deleteGuessResultHistory(player.socketId);
     }
 }

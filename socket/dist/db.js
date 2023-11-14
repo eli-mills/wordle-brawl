@@ -161,9 +161,9 @@ export async function addToPlayerScore(socketId, numberOfPoints) {
         throw err;
     }
 }
-export async function setPlayerHasSolved(socketId) {
+export async function setPlayerHasSolved(socketId, playerHasSolved) {
     try {
-        await redisClient.hSet(getRedisPlayerKey(socketId), 'solved', 'true');
+        await redisClient.hSet(getRedisPlayerKey(socketId), 'solved', playerHasSolved);
     }
     catch (err) {
         console.error(`DB error when setting player ${socketId} as solved.`);
@@ -473,8 +473,13 @@ async function getPlayerList(roomId) {
         console.error(`DB error when retrieving playerList for game ${roomId}`);
         throw err;
     }
-    const playerList = await Promise.all(playerIdList.map(async (id) => await getPlayer(id)));
-    return playerList.filter((player) => player !== null);
+    const output = {};
+    for (const socketId of playerIdList) {
+        const player = await getPlayer(socketId);
+        if (player)
+            output[socketId] = player;
+    }
+    return output;
 }
 async function addPlayerToList(socketId, roomId) {
     try {
@@ -594,5 +599,17 @@ async function getRandomChooserFromList(roomId) {
     catch (err) {
         console.error(`DB error when retrieving random member from playerList ${roomId}`);
         throw err;
+    }
+}
+/**
+ * Resets 'solved' status for every player in list and deletes each guessResultHistory
+ *
+ * @param roomId
+ */
+export async function resetPlayersSolved(roomId) {
+    const playerList = await getPlayerList(roomId);
+    for (const player of Object.values(playerList)) {
+        await setPlayerHasSolved(player.socketId, 'false');
+        await deleteGuessResultHistory(player.socketId);
     }
 }

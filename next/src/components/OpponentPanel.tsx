@@ -7,8 +7,8 @@ export default function OpponentPanel() {
 
     return (
         <div>
-            { game?.playerList.map((currPlayer, index) => 
-                currPlayer.socketId !== player?.socketId && currPlayer.socketId !== game?.chooser?.socketId && <OpponentCard key={index} player={currPlayer}/>
+            { game?.playerList && Object.values(game.playerList).map((currPlayer, index) => 
+                currPlayer.socketId !== player?.socketId && <OpponentCard key={index} player={currPlayer}/>
             )}
         </div>
     )

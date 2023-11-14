@@ -28,11 +28,12 @@ export default function App({ Component, pageProps }: AppProps) {
     useEffect(()=> {
         socket?.on(GameEvents.UPDATE_GAME_STATE, (gameState: Game) => {
             setGame(gameState);
+            setPlayer(gameState.playerList[socket.id])
         });
 
-        socket?.on(GameEvents.UPDATE_PLAYER, (player: Player) => {
-            setPlayer(player);
-        });
+        // socket?.on(GameEvents.UPDATE_PLAYER, (player: Player) => {
+        //     setPlayer(player);
+        // });
 
         return () => {
             socket?.off(GameEvents.UPDATE_GAME_STATE);

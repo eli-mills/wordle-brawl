@@ -22,7 +22,7 @@ export type GameStatus = "lobby" | "choosing" | "playing";
 export type Game = {
   roomId: string;
   leader: Player;
-  playerList: Player[];
+  playerList: Record<string, Player>;
   status: GameStatus;
   chooser: Player | null;
   currentAnswer: string;

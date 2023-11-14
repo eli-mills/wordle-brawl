@@ -50,8 +50,8 @@ async function onCreateGameRequest(socket) {
         socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
         return;
     }
-    await emitUpdatedPlayer(socket);
     socket.emit(GameEvents.NEW_GAME_CREATED, newRoomId);
+    await emitUpdatedGameState(newRoomId);
 }
 async function onJoinGameRequest(socket, roomId) {
     console.log(`Player ${socket.id} request to join room ${roomId}`);
@@ -70,7 +70,6 @@ async function onDeclareName(socket, name) {
     console.log(`Name received: ${name}. Writing to db.`);
     await db.updatePlayerName(socket.id, name);
     const roomId = await db.getPlayerRoomId(socket.id);
-    await emitUpdatedPlayer(socket);
     await emitUpdatedGameState(roomId);
 }
 async function onGuess(socket, guess) {
@@ -83,10 +82,12 @@ async function onGuess(socket, guess) {
     // Handle solve
     if (result.correct) {
         await rewardPointsToPlayer(socket);
+        if (await allPlayersHaveSolved(roomId)) {
+            await resetForNewRound(roomId);
+        }
     }
     console.log('Sending results');
     socket.emit(GameEvents.EVALUATION, result);
-    await emitUpdatedPlayer(socket);
     await emitUpdatedGameState(await db.getPlayerRoomId(socket.id));
 }
 async function onBeginGameRequest(socket) {
@@ -118,13 +119,9 @@ async function onChooseWord(socket, word) {
  ************************************************/
 async function emitUpdatedGameState(roomId) {
     const gameStateData = await db.getGame(roomId);
-    if (gameStateData !== null) {
-        io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData);
-    }
-}
-async function emitUpdatedPlayer(socket) {
-    const player = await db.getPlayer(socket.id);
-    player && socket.emit(GameEvents.UPDATE_PLAYER, player);
+    if (gameStateData === null)
+        return;
+    io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData);
 }
 async function validateAnswerWord(word) {
     const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH);
@@ -152,5 +149,20 @@ async function rewardPointsToPlayer(socket) {
         await db.addToPlayerScore(socket.id, SPEED_BONUS);
         await db.updateGame(game);
     }
-    await db.setPlayerHasSolved(socket.id);
+    await db.setPlayerHasSolved(socket.id, 'true');
+}
+async function allPlayersHaveSolved(roomId) {
+    const game = await db.getGame(roomId);
+    if (!game || game.status !== 'playing')
+        return false;
+    return (Object.values(game.playerList).filter((player) => player.socketId !== game.chooser?.socketId && !player.solved).length === 0);
+}
+async function resetForNewRound(roomId) {
+    await db.setGameStatusChoosing(roomId);
+    const game = await db.getGame(roomId);
+    if (game) {
+        game.speedBonusWinner = null;
+        await db.updateGame(game);
+    }
+    await db.resetPlayersSolved(roomId);
 }

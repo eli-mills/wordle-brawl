@@ -14,7 +14,7 @@ export default function Key({letter}: KeyProps) {
             console.log("clicked");
             window.dispatchEvent(keyUpEvent);
         });
-    }, []);
+    }, [letter]);
     return (
         <button id={`key${letter}`} className={styles.letterKey}>
             {letter}

@@ -81,8 +81,8 @@ async function onCreateGameRequest(socket: Socket): Promise<void> {
         return
     }
 
-    await emitUpdatedPlayer(socket)
     socket.emit(GameEvents.NEW_GAME_CREATED, newRoomId)
+    await emitUpdatedGameState(newRoomId)
 }
 
 async function onJoinGameRequest(
@@ -110,11 +110,10 @@ async function onDeclareName(socket: Socket, name: string) {
     await db.updatePlayerName(socket.id, name)
     const roomId = await db.getPlayerRoomId(socket.id)
 
-    await emitUpdatedPlayer(socket)
     await emitUpdatedGameState(roomId)
 }
 
-async function onGuess(socket: Socket, guess: string) {
+async function onGuess(socket: Socket, guess: string): Promise<void> {
     console.log(`Guess received: ${guess}`)
 
     // Evaluate result
@@ -127,11 +126,13 @@ async function onGuess(socket: Socket, guess: string) {
     // Handle solve
     if (result.correct) {
         await rewardPointsToPlayer(socket)
+        if (await allPlayersHaveSolved(roomId)) {
+            await resetForNewRound(roomId)
+        }
     }
 
     console.log('Sending results')
     socket.emit(GameEvents.EVALUATION, result)
-    await emitUpdatedPlayer(socket)
     await emitUpdatedGameState(await db.getPlayerRoomId(socket.id))
 }
 
@@ -176,14 +177,8 @@ async function onChooseWord(socket: Socket, word: string): Promise<void> {
 
 async function emitUpdatedGameState(roomId: string): Promise<void> {
     const gameStateData = await db.getGame(roomId)
-    if (gameStateData !== null) {
-        io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData)
-    }
-}
-
-async function emitUpdatedPlayer(socket: Socket): Promise<void> {
-    const player = await db.getPlayer(socket.id)
-    player && socket.emit(GameEvents.UPDATE_PLAYER, player)
+    if (gameStateData === null) return
+    io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData)
 }
 
 async function validateAnswerWord(word: string): Promise<boolean> {
@@ -215,5 +210,27 @@ async function rewardPointsToPlayer(socket: Socket): Promise<void> {
         await db.updateGame(game)
     }
 
-    await db.setPlayerHasSolved(socket.id)
+    await db.setPlayerHasSolved(socket.id, 'true')
+}
+
+async function allPlayersHaveSolved(roomId: string): Promise<boolean> {
+    const game = await db.getGame(roomId)
+    if (!game || game.status !== 'playing') return false
+
+    return (
+        Object.values(game.playerList).filter(
+            (player) =>
+                player.socketId !== game.chooser?.socketId && !player.solved
+        ).length === 0
+    )
+}
+
+async function resetForNewRound(roomId: string): Promise<void> {
+    await db.setGameStatusChoosing(roomId)
+    const game = await db.getGame(roomId);
+    if (game) {
+        game.speedBonusWinner = null;
+        await db.updateGame(game);
+    }
+    await db.resetPlayersSolved(roomId)
 }

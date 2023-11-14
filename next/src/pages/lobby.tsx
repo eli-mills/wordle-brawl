@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { GlobalContext } from './_app';
@@ -45,7 +44,7 @@ export default function LobbyPage() {
                 {socket && (<div>
                     <h1>Room {game?.roomId}</h1>
                     <ul>
-                        {game?.playerList.map((currPlayer, index) => <li key={index}>{currPlayer.name}</li>)}
+                        {game?.playerList && Object.values(game.playerList).map((currPlayer, index) => <li key={index}>{currPlayer.name}</li>)}
                     </ul>
                     {displayModal && <NameModal setDisplayModal={setDisplayModal}/>}
                     {player?.name && (player?.socketId === game?.leader.socketId) && <button onClick={()=>socket?.emit(GameEvents.REQUEST_BEGIN_GAME)}>Start Game</button>}

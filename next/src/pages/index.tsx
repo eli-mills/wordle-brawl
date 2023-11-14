@@ -19,7 +19,7 @@ export default function HomePage() {
         socket.on(GameEvents.NEW_GAME_CREATED, (roomId: string) => {
             router.push(`/lobby?room=${roomId}`);
         });
-    }, []);
+    }, [router, setSocket]);
 
     function requestCreateRoom(e: any) {
         e.preventDefault();
