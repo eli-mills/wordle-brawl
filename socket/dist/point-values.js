@@ -6,5 +6,5 @@ export const EFFICIENCY_POINTS = {
     5: 50,
     6: 10,
 };
-export const SPEED_BONUS = 10;
+export const SPEED_BONUS = 100;
 export const MAX_CHOOSER_POINTS = 300;

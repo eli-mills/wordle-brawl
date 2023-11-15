@@ -23,7 +23,7 @@ io.on('connection', async (newSocket) => {
     await db.createPlayer(newSocket.id);
     newSocket.on(GameEvents.REQUEST_NEW_GAME, () => onCreateGameRequest(newSocket));
     newSocket.on(GameEvents.REQUEST_JOIN_GAME, (roomId) => onJoinGameRequest(newSocket, roomId));
-    newSocket.on(GameEvents.DECLARE_NAME, (name) => onDeclareName(newSocket, name));
+    newSocket.on(GameEvents.DECLARE_NAME, (name, callback) => onDeclareName(newSocket, name, callback));
     newSocket.on(GameEvents.GUESS, (guess) => onGuess(newSocket, guess));
     newSocket.on('disconnect', () => onDisconnect(newSocket));
     newSocket.on(GameEvents.REQUEST_BEGIN_GAME, () => onBeginGameRequest(newSocket));
@@ -65,11 +65,25 @@ async function onJoinGameRequest(socket, roomId) {
     await db.updatePlayerRoom(socket.id, roomId);
     await emitUpdatedGameState(roomId);
 }
-async function onDeclareName(socket, name) {
-    // TODO: add check for name uniqueness in room
-    console.log(`Name received: ${name}. Writing to db.`);
-    await db.updatePlayerName(socket.id, name);
+async function onDeclareName(socket, name, callback) {
+    const player = await db.getPlayer(socket.id);
     const roomId = await db.getPlayerRoomId(socket.id);
+    const game = await db.getGame(roomId);
+    if (!player || !game)
+        throw new Error(`Invalid state: player or game missing when declaring name ${name} for player ${socket.id}`);
+    // Check for duplicate name
+    const playerNames = Object.values(game.playerList).map((player) => player.name);
+    if (playerNames.includes(name)) {
+        console.log(`Duplicate name not allowed: player ${socket.id} requests ${name}`);
+        callback({ accepted: false, duplicate: true });
+        return;
+    }
+    // Update name
+    console.log(`Name received: ${name}. Writing to db.`);
+    player.name = name;
+    await db.updatePlayer(player);
+    // Response
+    callback({ accepted: true, duplicate: false });
     await emitUpdatedGameState(roomId);
 }
 async function onGuess(socket, guess) {

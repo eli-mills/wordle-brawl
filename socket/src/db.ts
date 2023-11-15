@@ -130,25 +130,6 @@ export async function deletePlayer(socketId: string): Promise<void> {
     await removePlayerFromList(socketId, player.roomId)
 }
 
-/**
- * Assigns the given name to the given player in the DB.
- *
- * @param socketId : ID of the socket connection used by the player
- * @param playerName : name to be assigned to player
- */
-export async function updatePlayerName(
-    socketId: string,
-    playerName: string
-): Promise<void> {
-    try {
-        await redisClient.hSet(getRedisPlayerKey(socketId), 'name', playerName)
-    } catch (err) {
-        console.error(
-            `DB error when updating player ${socketId} to have name ${playerName}`
-        )
-        throw err
-    }
-}
 
 /**
  * Assigns the given roomId and adds player to that room's playerList.

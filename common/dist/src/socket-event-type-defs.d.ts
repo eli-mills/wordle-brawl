@@ -10,7 +10,10 @@ export interface ServerToClientEvents {
     [GameEvents.BEGIN_GAME]: () => void;
 }
 export interface ClientToServerEvents {
-    [GameEvents.DECLARE_NAME]: (playerName: string) => void;
+    [GameEvents.DECLARE_NAME]: (playerName: string, callback: (result: {
+        accepted: boolean;
+        duplicate: boolean;
+    }) => void) => void;
     [GameEvents.GUESS]: (guess: string) => void;
     [GameEvents.REQUEST_NEW_GAME]: () => void;
     [GameEvents.REQUEST_JOIN_GAME]: (room: string) => void;

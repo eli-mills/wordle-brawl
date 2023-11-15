@@ -45,8 +45,15 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.REQUEST_JOIN_GAME, (roomId: string) =>
         onJoinGameRequest(newSocket, roomId)
     )
-    newSocket.on(GameEvents.DECLARE_NAME, (name: string) =>
-        onDeclareName(newSocket, name)
+    newSocket.on(
+        GameEvents.DECLARE_NAME,
+        (
+            name: string,
+            callback: (result: {
+                accepted: boolean
+                duplicate: boolean
+            }) => void
+        ) => onDeclareName(newSocket, name, callback)
     )
     newSocket.on(GameEvents.GUESS, (guess: string) => onGuess(newSocket, guess))
     newSocket.on('disconnect', () => onDisconnect(newSocket))
@@ -106,14 +113,39 @@ async function onJoinGameRequest(
     await emitUpdatedGameState(roomId)
 }
 
-async function onDeclareName(socket: Socket, name: string) {
-    // TODO: add check for name uniqueness in room
-
-    console.log(`Name received: ${name}. Writing to db.`)
-
-    await db.updatePlayerName(socket.id, name)
+async function onDeclareName(
+    socket: Socket,
+    name: string,
+    callback: (result: { accepted: boolean; duplicate: boolean }) => void
+) {
+    const player = await db.getPlayer(socket.id)
     const roomId = await db.getPlayerRoomId(socket.id)
+    const game = await db.getGame(roomId)
 
+    if (!player || !game)
+        throw new Error(
+            `Invalid state: player or game missing when declaring name ${name} for player ${socket.id}`
+        )
+
+    // Check for duplicate name
+    const playerNames = Object.values(game.playerList).map(
+        (player) => player.name
+    )
+    if (playerNames.includes(name)) {
+        console.log(
+            `Duplicate name not allowed: player ${socket.id} requests ${name}`
+        )
+        callback({accepted: false, duplicate: true})
+        return
+    }
+
+    // Update name
+    console.log(`Name received: ${name}. Writing to db.`)
+    player.name = name
+    await db.updatePlayer(player)
+
+    // Response
+    callback({accepted: true, duplicate: false})
     await emitUpdatedGameState(roomId)
 }
 
