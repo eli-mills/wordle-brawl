@@ -23,14 +23,13 @@ export type Game = {
     status: GameStatus;
     chooser: Player | null;
     currentAnswer: string;
-    speedBonusWinner: Player | null;
 };
 export type Player = {
     socketId: string;
     roomId: string;
     name: string;
     isLeader: boolean;
-    guessResultHistory: Result[][];
+    readonly guessResultHistory: Result[][];
     score: number;
     solved: boolean;
 };

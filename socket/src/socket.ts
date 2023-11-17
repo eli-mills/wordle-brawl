@@ -74,20 +74,20 @@ io.on('connection', async (newSocket) => {
 
 async function onDisconnect(socket: Socket): Promise<void> {
     // Get player room
-    const roomId = await db.getPlayerRoomId(socket.id)
+    const player = await db.getPlayer(socket.id)
 
     // Delete player from db
     console.log(`Player ${socket.id} disconnected`)
     await db.deletePlayer(socket.id)
 
-    emitUpdatedGameState(roomId)
+    await emitUpdatedGameState(player.roomId)
 }
 
 async function onCreateGameRequest(socket: Socket): Promise<void> {
-    console.log('Create game request received')
+    console.log(`Player ${socket.id} requests new game`)
 
     const newRoomId = await db.createGame(socket.id)
-    if (newRoomId === null) {
+    if (!newRoomId) {
         socket.emit(GameEvents.NO_ROOMS_AVAILABLE)
         return
     }
@@ -100,16 +100,29 @@ async function onJoinGameRequest(
     socket: Socket,
     roomId: string
 ): Promise<void> {
-    console.log(`Player ${socket.id} request to join room ${roomId}`)
+    console.log(`Player ${socket.id} requests to join room ${roomId}`)
+
+    const player = await db.getPlayer(socket.id)
+    if (!player)
+        throw new Error(
+            `Invalid state: player ${socket.id} could not be retrieved but requests to join room ${roomId}`
+        )
+
     if (!(await db.gameExists(roomId))) {
         console.log(`Game ${roomId} does not exist`)
         socket.emit(GameEvents.GAME_DNE)
         return
     }
 
+    // Join room
     socket.join(roomId)
+    player.roomId = roomId
+    await db.updatePlayer(player)
+
+    // Add player to game's playerList
+    await db.addPlayerToList(socket.id, roomId)
+
     console.log(`Player ${socket.id} successfully joined room ${roomId}`)
-    await db.updatePlayerRoom(socket.id, roomId)
     await emitUpdatedGameState(roomId)
 }
 
@@ -119,13 +132,7 @@ async function onDeclareName(
     callback: (result: { accepted: boolean; duplicate: boolean }) => void
 ) {
     const player = await db.getPlayer(socket.id)
-    const roomId = await db.getPlayerRoomId(socket.id)
-    const game = await db.getGame(roomId)
-
-    if (!player || !game)
-        throw new Error(
-            `Invalid state: player or game missing when declaring name ${name} for player ${socket.id}`
-        )
+    const game = await db.getGame(player.roomId)
 
     // Check for duplicate name
     const playerNames = Object.values(game.playerList).map(
@@ -135,7 +142,7 @@ async function onDeclareName(
         console.log(
             `Duplicate name not allowed: player ${socket.id} requests ${name}`
         )
-        callback({accepted: false, duplicate: true})
+        callback({ accepted: false, duplicate: true })
         return
     }
 
@@ -145,19 +152,23 @@ async function onDeclareName(
     await db.updatePlayer(player)
 
     // Response
-    callback({accepted: true, duplicate: false})
-    await emitUpdatedGameState(roomId)
+    callback({ accepted: true, duplicate: false })
+    await emitUpdatedGameState(player.roomId)
 }
 
 async function onGuess(socket: Socket, guess: string): Promise<void> {
     console.log(`Guess received: ${guess}`)
+    const player = await db.getPlayer(socket.id)
+    if (!player)
+        throw new Error(
+            `Invalid state: socket ${socket.id} submitted guess ${guess} without existing Player in DB.`
+        )
 
     // Evaluate result
-    const roomId = await db.getPlayerRoomId(socket.id)
-    const result = await evaluateGuess(guess, roomId)
+    const result = await evaluateGuess(guess, player.roomId)
 
     result.resultByPosition &&
-        (await db.createGuessResult(socket.id, result.resultByPosition))
+        (await db.createGuessResult(player.socketId, result.resultByPosition))
 
     if (result.accepted) {
         await rewardPointsToChooser(socket)
@@ -165,27 +176,31 @@ async function onGuess(socket: Socket, guess: string): Promise<void> {
 
     // Handle solve
     if (result.correct) {
-        await rewardPointsToPlayer(socket)
-        if (await allPlayersHaveSolved(roomId)) {
-            await resetForNewRound(roomId)
+        await db.addPlayerToSolvedList(player.socketId, player.roomId)
+        player.solved = true
+        rewardPointsToPlayer(socket)
+        await db.updatePlayer(player)
+        if (await allPlayersHaveSolved(player.roomId)) {
+            await resetForNewRound(player.roomId)
         }
     }
 
+    // Send state
     console.log('Sending results')
     socket.emit(GameEvents.EVALUATION, result)
-    await emitUpdatedGameState(await db.getPlayerRoomId(socket.id))
+    await emitUpdatedGameState(player.roomId)
 }
 
 async function onBeginGameRequest(
     socket: Socket<ClientToServerEvents, ServerToClientEvents>
 ): Promise<void> {
-    const roomId = await db.getPlayerRoomId(socket.id)
-    if (socket.id !== (await db.getGameLeader(roomId))) return // Requestor is not the game leader
+    const player = await db.getPlayer(socket.id)
+    if (socket.id !== (await db.getGameLeader(player.roomId))) return // Requestor is not the game leader
 
-    await db.setGameStatusChoosing(roomId)
-    await emitUpdatedGameState(roomId)
+    await db.updateGameField(player.roomId, 'status', 'choosing')
 
-    io.to(roomId).emit(GameEvents.BEGIN_GAME)
+    io.to(player.roomId).emit(GameEvents.BEGIN_GAME)
+    await emitUpdatedGameState(player.roomId)
 }
 
 async function onCheckChosenWordValid(
@@ -204,9 +219,10 @@ async function onChooseWord(socket: Socket, word: string): Promise<void> {
         )
         return
     }
-    const roomId = await db.getPlayerRoomId(socket.id)
-    await db.setGameStatusPlaying(roomId, word)
-    await emitUpdatedGameState(roomId)
+    const player = await db.getPlayer(socket.id)
+    await db.updateGameField(player.roomId, 'status', 'playing')
+    await db.updateGameField(player.roomId, 'currentAnswer', word)
+    await emitUpdatedGameState(player.roomId)
 }
 
 /************************************************
@@ -216,8 +232,8 @@ async function onChooseWord(socket: Socket, word: string): Promise<void> {
  ************************************************/
 
 async function emitUpdatedGameState(roomId: string): Promise<void> {
+    if (!(await db.gameExists(roomId))) return
     const gameStateData = await db.getGame(roomId)
-    if (gameStateData === null) return
     io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData)
 }
 
@@ -227,30 +243,27 @@ async function validateAnswerWord(word: string): Promise<boolean> {
 }
 
 /**
- * Rewards points and updates state after Player solves game.
+ * Adds points to given Player and saves to DB.
  *
- * @param socket
+ * @param player: Player object to mutate
  */
 async function rewardPointsToPlayer(socket: Socket): Promise<void> {
     const player = await db.getPlayer(socket.id)
-    if (!player || player.guessResultHistory.length === 0) return
-
-    const roomId = await db.getPlayerRoomId(socket.id)
-    const game = await db.getGame(roomId)
+    if (player.guessResultHistory.length === 0)
+        throw new Error(
+            `Invalid state: player ${player.socketId} is being rewarded points with no guesses for game ${player.roomId}`
+        )
 
     // Add efficiency points
     const efficiencyPoints = EFFICIENCY_POINTS[player.guessResultHistory.length]
-    await db.addToPlayerScore(socket.id, efficiencyPoints)
+    player.score += efficiencyPoints
 
     // Add speed bonus
-    if (!game) return
-    if (!game.speedBonusWinner) {
-        game.speedBonusWinner = player
-        await db.addToPlayerScore(socket.id, SPEED_BONUS)
-        await db.updateGame(game)
+    const firstSolver = await db.getFirstSolver(player.roomId)
+    if (firstSolver.socketId === player.socketId) {
+        player.score += SPEED_BONUS
     }
-
-    await db.setPlayerHasSolved(socket.id, 'true')
+    await db.updatePlayer(player)
 }
 
 async function allPlayersHaveSolved(roomId: string): Promise<boolean> {
@@ -266,13 +279,16 @@ async function allPlayersHaveSolved(roomId: string): Promise<boolean> {
 }
 
 async function resetForNewRound(roomId: string): Promise<void> {
-    await db.setGameStatusChoosing(roomId)
-    const game = await db.getGame(roomId)
-    if (game) {
-        game.speedBonusWinner = null
-        await db.updateGame(game)
-    }
+    if (!(await db.gameExists(roomId)))
+        throw new Error(
+            `Invalid state: tried to reset game ${roomId} which doesn't exist.`
+        )
+
+    await db.updateGameField(roomId, 'status', 'choosing')
     await db.resetPlayersSolved(roomId)
+
+    // TODO: check if last round
+    await db.pickRandomChooser(roomId)
 }
 
 async function rewardPointsToChooser(socket: Socket): Promise<void> {
@@ -285,6 +301,7 @@ async function rewardPointsToChooser(socket: Socket): Promise<void> {
 
     const maxGuesses = 5 * (Object.keys(game.playerList).length - 1)
     const pointsPerGuess = MAX_CHOOSER_POINTS / maxGuesses
+    player.score += pointsPerGuess
 
-    await db.addToPlayerScore(game.chooser.socketId, pointsPerGuess)
+    await db.updatePlayer(player)
 }
