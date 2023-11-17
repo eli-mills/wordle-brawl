@@ -1,7 +1,7 @@
 import { promises as fsPromises } from 'fs'
 import path from 'path'
 import { EvaluationResponseData, Result } from '../../common/dist/index.js'
-import { getCurrentAnswer } from './db.js'
+import { getGame } from './db.js'
 
 interface WordValidator {
     validateWord: (guess: string) => Promise<boolean>
@@ -68,15 +68,15 @@ export async function evaluateGuess(
 
     if (!accepted) return { accepted, correct: false }
 
-    const solution = (await getCurrentAnswer(roomId)).toUpperCase()
-    const solutionSplit = solution.split('')
+    const game = await getGame(roomId);
+    const answerSplit = game.currentAnswer.split('')
 
-    if (guess === solution)
+    if (guess === game.currentAnswer)
         return {
             accepted,
             correct: true,
             resultByLetter: Object.fromEntries(
-                solutionSplit.map((letter) => [letter, 'hit'])
+                answerSplit.map((letter) => [letter, 'hit'])
             ),
             resultByPosition: new Array(5).fill('hit'),
         }
@@ -84,8 +84,8 @@ export async function evaluateGuess(
     const resultByPosition = Array<Result>(5).fill('miss')
     const resultByLetter: Record<string, Result> = {}
 
-    mutateIfHits(guess, solutionSplit, resultByPosition, resultByLetter)
-    mutateIfHas(guess, solutionSplit, resultByPosition, resultByLetter)
+    mutateIfHits(guess, answerSplit, resultByPosition, resultByLetter)
+    mutateIfHas(guess, answerSplit, resultByPosition, resultByLetter)
 
     return { resultByPosition, resultByLetter, accepted, correct: false }
 }

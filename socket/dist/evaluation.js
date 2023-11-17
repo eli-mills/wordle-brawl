@@ -1,6 +1,6 @@
 import { promises as fsPromises } from 'fs';
 import path from 'path';
-import { getCurrentAnswer } from './db.js';
+import { getGame } from './db.js';
 const ALLOWED_GUESSES_PATH = 'data/allowed.txt';
 export const ALLOWED_ANSWERS_PATH = 'data/answers.txt';
 export class FileWordValidator {
@@ -47,18 +47,18 @@ export async function evaluateGuess(guess, roomId) {
     const accepted = await validator.validateWord(guess);
     if (!accepted)
         return { accepted, correct: false };
-    const solution = (await getCurrentAnswer(roomId)).toUpperCase();
-    const solutionSplit = solution.split('');
-    if (guess === solution)
+    const game = await getGame(roomId);
+    const answerSplit = game.currentAnswer.split('');
+    if (guess === game.currentAnswer)
         return {
             accepted,
             correct: true,
-            resultByLetter: Object.fromEntries(solutionSplit.map((letter) => [letter, 'hit'])),
+            resultByLetter: Object.fromEntries(answerSplit.map((letter) => [letter, 'hit'])),
             resultByPosition: new Array(5).fill('hit'),
         };
     const resultByPosition = Array(5).fill('miss');
     const resultByLetter = {};
-    mutateIfHits(guess, solutionSplit, resultByPosition, resultByLetter);
-    mutateIfHas(guess, solutionSplit, resultByPosition, resultByLetter);
+    mutateIfHits(guess, answerSplit, resultByPosition, resultByLetter);
+    mutateIfHas(guess, answerSplit, resultByPosition, resultByLetter);
     return { resultByPosition, resultByLetter, accepted, correct: false };
 }

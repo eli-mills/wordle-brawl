@@ -119,7 +119,8 @@ async function onGuess(socket, guess) {
 }
 async function onBeginGameRequest(socket) {
     const player = await db.getPlayer(socket.id);
-    if (socket.id !== (await db.getGameLeader(player.roomId)))
+    const game = await db.getGame(player.roomId);
+    if (socket.id !== game.leader.socketId)
         return; // Requestor is not the game leader
     await db.updateGameField(player.roomId, 'status', 'choosing');
     const chooser = await db.getRandomChooserFromList(player.roomId);
