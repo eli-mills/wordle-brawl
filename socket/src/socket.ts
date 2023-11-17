@@ -178,8 +178,8 @@ async function onGuess(socket: Socket, guess: string): Promise<void> {
     if (result.correct) {
         await db.addPlayerToSolvedList(player.socketId, player.roomId)
         player.solved = true
-        rewardPointsToPlayer(socket)
         await db.updatePlayer(player)
+        rewardPointsToPlayer(socket)
         if (await allPlayersHaveSolved(player.roomId)) {
             await resetForNewRound(player.roomId)
         }
@@ -198,6 +198,8 @@ async function onBeginGameRequest(
     if (socket.id !== (await db.getGameLeader(player.roomId))) return // Requestor is not the game leader
 
     await db.updateGameField(player.roomId, 'status', 'choosing')
+    const chooser = await db.getRandomChooserFromList(player.roomId)
+    await db.updateGameField(player.roomId, 'chooser', chooser.socketId)
 
     io.to(player.roomId).emit(GameEvents.BEGIN_GAME)
     await emitUpdatedGameState(player.roomId)
@@ -268,7 +270,10 @@ async function rewardPointsToPlayer(socket: Socket): Promise<void> {
 
 async function allPlayersHaveSolved(roomId: string): Promise<boolean> {
     const game = await db.getGame(roomId)
-    if (!game || game.status !== 'playing') return false
+    if (game.status !== 'playing')
+        throw new Error(
+            `Invalid state: checking if game ${roomId} with status ${game.status}`
+        )
 
     return (
         Object.values(game.playerList).filter(
@@ -288,20 +293,28 @@ async function resetForNewRound(roomId: string): Promise<void> {
     await db.resetPlayersSolved(roomId)
 
     // TODO: check if last round
-    await db.pickRandomChooser(roomId)
+    const chooser = await db.getRandomChooserFromList(roomId)
+    await db.updateGameField(roomId, 'chooser', chooser.socketId)
 }
 
 async function rewardPointsToChooser(socket: Socket): Promise<void> {
     const player = await db.getPlayer(socket.id)
     const game = await db.getGame(player?.roomId ?? '')
 
-    if (!player || !game || !game.chooser) return
+    if (!game.chooser)
+        throw new Error(
+            `Invalid state: rewarding points to chooser for game ${game.roomId} which has no chooser`
+        )
+    if (player.socketId === game.chooser.socketId)
+        throw new Error(
+            `Invalid state: player ${socket.id} is a guesser and chooser in game ${game.roomId}`
+        )
 
-    if (player.guessResultHistory.length <= 1) return
+    if (player.guessResultHistory.length <= 1) return // No points for chooser if player guessed on first try
 
     const maxGuesses = 5 * (Object.keys(game.playerList).length - 1)
     const pointsPerGuess = MAX_CHOOSER_POINTS / maxGuesses
-    player.score += pointsPerGuess
+    game.chooser.score += pointsPerGuess
 
-    await db.updatePlayer(player)
+    await db.updatePlayer(game.chooser)
 }
