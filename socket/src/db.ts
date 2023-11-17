@@ -29,10 +29,10 @@ export async function initializeDbConn(): Promise<void> {
 
 type DbPlayer = Omit<
     Player,
-    'guessResultHistory' | 'isLeader' | 'solved' | 'score'
+    'guessResultHistory' | 'isLeader' | 'finished' | 'score'
 > & {
     isLeader: RedisBool
-    solved: RedisBool
+    finished: RedisBool
     score: string
 }
 
@@ -48,7 +48,7 @@ export async function createPlayer(socketId: string): Promise<void> {
         name: '',
         isLeader: 'false',
         score: '0',
-        solved: 'false',
+        finished: 'false',
     }
 
     try {
@@ -87,7 +87,7 @@ export async function getPlayer(socketId: string): Promise<Player> {
         score: Number.parseInt(player.score),
         guessResultHistory,
         isLeader: player.isLeader === 'true',
-        solved: player.solved === 'true',
+        finished: player.finished === 'true',
     }
 }
 
@@ -98,7 +98,7 @@ function convertPlayerToDbPlayer(player: Player): DbPlayer {
     return {
         ...rest,
         isLeader: player.isLeader ? 'true' : 'false',
-        solved: player.solved ? 'true' : 'false',
+        finished: player.finished ? 'true' : 'false',
         score: `${player.score}`,
     }
 }
@@ -413,7 +413,10 @@ function getRedisSolvedListKey(roomId: string): string {
 async function getPlayerList(roomId: string): Promise<Record<string, Player>> {
     let playerIdList: string[]
     try {
-        playerIdList = await redisClient.sUnion([getRedisPlayerListKey(roomId), getRedisChooserListKey(roomId)])
+        playerIdList = await redisClient.sUnion([
+            getRedisPlayerListKey(roomId),
+            getRedisChooserListKey(roomId),
+        ])
     } catch (err) {
         console.error(`DB error when retrieving playerList for game ${roomId}`)
         throw err
@@ -437,14 +440,19 @@ export async function getRandomChooserFromList(
 ): Promise<Player> {
     let chooserId: string | null
     try {
-        chooserId = await redisClient.sPop(getRedisPlayerListKey(roomId)) as unknown as string | null
+        chooserId = (await redisClient.sPop(
+            getRedisPlayerListKey(roomId)
+        )) as unknown as string | null
     } catch (err) {
         console.error(
             `DB error when finding random chooser from playerList ${roomId}`
         )
         throw err
     }
-    if (!chooserId) throw new Error(`Invalid state: random chooser requested for game ${roomId}, no players remain in list.`)
+    if (!chooserId)
+        throw new Error(
+            `Invalid state: random chooser requested for game ${roomId}, no players remain in list.`
+        )
     await addPlayerToChooserList(chooserId, roomId)
 
     return await getPlayer(chooserId)
@@ -535,10 +543,10 @@ export async function addPlayerToSolvedList(
  *
  * @param roomId : ID of the room containing the Players
  */
-export async function resetPlayersSolved(roomId: string): Promise<void> {
+export async function resetPlayersFinished(roomId: string): Promise<void> {
     const playerList = await getPlayerList(roomId)
     for (const player of Object.values(playerList)) {
-        player.solved = false
+        player.finished = false
         await updatePlayer(player)
         await deleteGuessResultHistory(player.socketId)
     }

@@ -24,7 +24,7 @@ export async function createPlayer(socketId) {
         name: '',
         isLeader: 'false',
         score: '0',
-        solved: 'false',
+        finished: 'false',
     };
     try {
         await redisClient.hSet(getRedisPlayerKey(socketId), newPlayer);
@@ -57,7 +57,7 @@ export async function getPlayer(socketId) {
         score: Number.parseInt(player.score),
         guessResultHistory,
         isLeader: player.isLeader === 'true',
-        solved: player.solved === 'true',
+        finished: player.finished === 'true',
     };
 }
 function convertPlayerToDbPlayer(player) {
@@ -66,7 +66,7 @@ function convertPlayerToDbPlayer(player) {
     return {
         ...rest,
         isLeader: player.isLeader ? 'true' : 'false',
-        solved: player.solved ? 'true' : 'false',
+        finished: player.finished ? 'true' : 'false',
         score: `${player.score}`,
     };
 }
@@ -316,7 +316,10 @@ function getRedisSolvedListKey(roomId) {
 async function getPlayerList(roomId) {
     let playerIdList;
     try {
-        playerIdList = await redisClient.sUnion([getRedisPlayerListKey(roomId), getRedisChooserListKey(roomId)]);
+        playerIdList = await redisClient.sUnion([
+            getRedisPlayerListKey(roomId),
+            getRedisChooserListKey(roomId),
+        ]);
     }
     catch (err) {
         console.error(`DB error when retrieving playerList for game ${roomId}`);
@@ -337,7 +340,7 @@ async function getPlayerList(roomId) {
 export async function getRandomChooserFromList(roomId) {
     let chooserId;
     try {
-        chooserId = await redisClient.sPop(getRedisPlayerListKey(roomId));
+        chooserId = (await redisClient.sPop(getRedisPlayerListKey(roomId)));
     }
     catch (err) {
         console.error(`DB error when finding random chooser from playerList ${roomId}`);
@@ -410,10 +413,10 @@ export async function addPlayerToSolvedList(socketId, roomId) {
  *
  * @param roomId : ID of the room containing the Players
  */
-export async function resetPlayersSolved(roomId) {
+export async function resetPlayersFinished(roomId) {
     const playerList = await getPlayerList(roomId);
     for (const player of Object.values(playerList)) {
-        player.solved = false;
+        player.finished = false;
         await updatePlayer(player);
         await deleteGuessResultHistory(player.socketId);
     }

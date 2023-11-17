@@ -3,7 +3,7 @@ import { createServer } from 'http';
 import * as db from './db.js';
 import { GameEvents, } from '../../common/dist/index.js';
 import { evaluateGuess, FileWordValidator, ALLOWED_ANSWERS_PATH, } from './evaluation.js';
-import { EFFICIENCY_POINTS, SPEED_BONUS, MAX_CHOOSER_POINTS, } from './point-values.js';
+import { EFFICIENCY_POINTS, SPEED_BONUS, MAX_CHOOSER_POINTS, MAX_NUM_GUESSES, } from './constants.js';
 /************************************************
  *                                              *
  *                CONFIGURATION                 *
@@ -105,12 +105,16 @@ async function onGuess(socket, guess) {
     // Handle solve
     if (result.correct) {
         await db.addPlayerToSolvedList(player.socketId, player.roomId);
-        player.solved = true;
+        player.finished = true;
         await db.updatePlayer(player);
         rewardPointsToPlayer(socket);
-        if (await allPlayersHaveSolved(player.roomId)) {
-            await resetForNewRound(player.roomId);
-        }
+    }
+    else {
+        await checkPlayerLastGuess(socket);
+    }
+    // Handle new round
+    if (await allPlayersHaveSolved(player.roomId)) {
+        await resetForNewRound(player.roomId);
     }
     // Send state
     console.log('Sending results');
@@ -181,13 +185,13 @@ async function allPlayersHaveSolved(roomId) {
     const game = await db.getGame(roomId);
     if (game.status !== 'playing')
         throw new Error(`Invalid state: checking if game ${roomId} with status ${game.status}`);
-    return (Object.values(game.playerList).filter((player) => player.socketId !== game.chooser?.socketId && !player.solved).length === 0);
+    return (Object.values(game.playerList).filter((player) => player.socketId !== game.chooser?.socketId && !player.finished).length === 0);
 }
 async function resetForNewRound(roomId) {
     if (!(await db.gameExists(roomId)))
         throw new Error(`Invalid state: tried to reset game ${roomId} which doesn't exist.`);
     await db.updateGameField(roomId, 'status', 'choosing');
-    await db.resetPlayersSolved(roomId);
+    await db.resetPlayersFinished(roomId);
     // TODO: check if last round
     const chooser = await db.getRandomChooserFromList(roomId);
     await db.updateGameField(roomId, 'chooser', chooser.socketId);
@@ -205,4 +209,12 @@ async function rewardPointsToChooser(socket) {
     const pointsPerGuess = MAX_CHOOSER_POINTS / maxGuesses;
     game.chooser.score += pointsPerGuess;
     await db.updatePlayer(game.chooser);
+}
+async function checkPlayerLastGuess(socket) {
+    const player = await db.getPlayer(socket.id);
+    if (player.guessResultHistory.length >= MAX_NUM_GUESSES) {
+        console.log(`Player ${player.socketId} struck out!`);
+        player.finished = true;
+        await db.updatePlayer(player);
+    }
 }

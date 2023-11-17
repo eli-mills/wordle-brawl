@@ -10,3 +10,5 @@ export const EFFICIENCY_POINTS: Record<number, number> = {
 export const SPEED_BONUS = 100
 
 export const MAX_CHOOSER_POINTS = 300
+
+export const MAX_NUM_GUESSES = 6

@@ -35,5 +35,5 @@ export type Player = {
   isLeader: boolean;
   readonly guessResultHistory: Result[][];
   score: number;
-  solved: boolean;
+  finished: boolean;
 };
