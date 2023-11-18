@@ -1,9 +1,8 @@
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import * as db from './db.js';
-import { GameEvents, } from '../../common/dist/index.js';
+import { GameEvents, GameParameters, gameCanStart, } from '../../common/dist/index.js';
 import { evaluateGuess, FileWordValidator, ALLOWED_ANSWERS_PATH, } from './evaluation.js';
-import { EFFICIENCY_POINTS, SPEED_BONUS, MAX_CHOOSER_POINTS, MAX_NUM_GUESSES, } from './constants.js';
 /************************************************
  *                                              *
  *                CONFIGURATION                 *
@@ -22,7 +21,7 @@ io.on('connection', async (newSocket) => {
     console.log(`User ${newSocket.id} connected.`);
     await db.createPlayer(newSocket.id);
     newSocket.on(GameEvents.REQUEST_NEW_GAME, () => onCreateGameRequest(newSocket));
-    newSocket.on(GameEvents.REQUEST_JOIN_GAME, (roomId) => onJoinGameRequest(newSocket, roomId));
+    newSocket.on(GameEvents.REQUEST_JOIN_GAME, (roomId, callback) => onJoinGameRequest(newSocket, roomId, callback));
     newSocket.on(GameEvents.DECLARE_NAME, (name, callback) => onDeclareName(newSocket, name, callback));
     newSocket.on(GameEvents.GUESS, (guess) => onGuess(newSocket, guess));
     newSocket.on('disconnect', () => onDisconnect(newSocket));
@@ -53,15 +52,17 @@ async function onCreateGameRequest(socket) {
     socket.emit(GameEvents.NEW_GAME_CREATED, newRoomId);
     await emitUpdatedGameState(newRoomId);
 }
-async function onJoinGameRequest(socket, roomId) {
+async function onJoinGameRequest(socket, roomId, callback) {
     console.log(`Player ${socket.id} requests to join room ${roomId}`);
     const player = await db.getPlayer(socket.id);
-    if (!player)
-        throw new Error(`Invalid state: player ${socket.id} could not be retrieved but requests to join room ${roomId}`);
+    const game = await db.getGame(roomId);
     if (!(await db.gameExists(roomId))) {
         console.log(`Game ${roomId} does not exist`);
-        socket.emit(GameEvents.GAME_DNE);
-        return;
+        return callback('DNE');
+    }
+    if (Object.keys(game.playerList).length >= GameParameters.MAX_PLAYERS) {
+        console.log(`Game ${roomId} is full.`);
+        return callback('MAX');
     }
     // Join room
     socket.join(roomId);
@@ -71,6 +72,7 @@ async function onJoinGameRequest(socket, roomId) {
     await db.addPlayerToList(socket.id, roomId);
     console.log(`Player ${socket.id} successfully joined room ${roomId}`);
     await emitUpdatedGameState(roomId);
+    return callback('OK');
 }
 async function onDeclareName(socket, name, callback) {
     const player = await db.getPlayer(socket.id);
@@ -124,8 +126,11 @@ async function onGuess(socket, guess) {
 async function onBeginGameRequest(socket) {
     const player = await db.getPlayer(socket.id);
     const game = await db.getGame(player.roomId);
+    // Validation
     if (socket.id !== game.leader.socketId)
         return; // Requestor is not the game leader
+    if (!gameCanStart(game))
+        return;
     await db.updateGameField(player.roomId, 'status', 'choosing');
     const chooser = await db.getRandomChooserFromList(player.roomId);
     await db.updateGameField(player.roomId, 'chooser', chooser.socketId);
@@ -172,12 +177,12 @@ async function rewardPointsToPlayer(socket) {
     if (player.guessResultHistory.length === 0)
         throw new Error(`Invalid state: player ${player.socketId} is being rewarded points with no guesses for game ${player.roomId}`);
     // Add efficiency points
-    const efficiencyPoints = EFFICIENCY_POINTS[player.guessResultHistory.length];
+    const efficiencyPoints = GameParameters.EFFICIENCY_POINTS[player.guessResultHistory.length];
     player.score += efficiencyPoints;
     // Add speed bonus
     const firstSolver = await db.getFirstSolver(player.roomId);
     if (firstSolver.socketId === player.socketId) {
-        player.score += SPEED_BONUS;
+        player.score += GameParameters.SPEED_BONUS;
     }
     await db.updatePlayer(player);
 }
@@ -206,13 +211,13 @@ async function rewardPointsToChooser(socket) {
     if (player.guessResultHistory.length <= 1)
         return; // No points for chooser if player guessed on first try
     const maxGuesses = 5 * (Object.keys(game.playerList).length - 1);
-    const pointsPerGuess = MAX_CHOOSER_POINTS / maxGuesses;
+    const pointsPerGuess = GameParameters.MAX_CHOOSER_POINTS / maxGuesses;
     game.chooser.score += pointsPerGuess;
     await db.updatePlayer(game.chooser);
 }
 async function checkPlayerLastGuess(socket) {
     const player = await db.getPlayer(socket.id);
-    if (player.guessResultHistory.length >= MAX_NUM_GUESSES) {
+    if (player.guessResultHistory.length >= GameParameters.MAX_NUM_GUESSES) {
         console.log(`Player ${player.socketId} struck out!`);
         player.finished = true;
         await db.updatePlayer(player);

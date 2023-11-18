@@ -5,18 +5,15 @@ import {
     GameEvents,
     ClientToServerEvents,
     ServerToClientEvents,
+    GameParameters,
+    JoinRequestResponse,
+    gameCanStart,
 } from '../../common/dist/index.js'
 import {
     evaluateGuess,
     FileWordValidator,
     ALLOWED_ANSWERS_PATH,
 } from './evaluation.js'
-import {
-    EFFICIENCY_POINTS,
-    SPEED_BONUS,
-    MAX_CHOOSER_POINTS,
-    MAX_NUM_GUESSES,
-} from './constants.js'
 
 /************************************************
  *                                              *
@@ -43,8 +40,10 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.REQUEST_NEW_GAME, () =>
         onCreateGameRequest(newSocket)
     )
-    newSocket.on(GameEvents.REQUEST_JOIN_GAME, (roomId: string) =>
-        onJoinGameRequest(newSocket, roomId)
+    newSocket.on(
+        GameEvents.REQUEST_JOIN_GAME,
+        (roomId: string, callback: (response: JoinRequestResponse) => void) =>
+            onJoinGameRequest(newSocket, roomId, callback)
     )
     newSocket.on(
         GameEvents.DECLARE_NAME,
@@ -99,20 +98,22 @@ async function onCreateGameRequest(socket: Socket): Promise<void> {
 
 async function onJoinGameRequest(
     socket: Socket,
-    roomId: string
+    roomId: string,
+    callback: (response: JoinRequestResponse) => void
 ): Promise<void> {
     console.log(`Player ${socket.id} requests to join room ${roomId}`)
 
     const player = await db.getPlayer(socket.id)
-    if (!player)
-        throw new Error(
-            `Invalid state: player ${socket.id} could not be retrieved but requests to join room ${roomId}`
-        )
+    const game = await db.getGame(roomId)
 
     if (!(await db.gameExists(roomId))) {
         console.log(`Game ${roomId} does not exist`)
-        socket.emit(GameEvents.GAME_DNE)
-        return
+        return callback('DNE')
+    }
+
+    if (Object.keys(game.playerList).length >= GameParameters.MAX_PLAYERS) {
+        console.log(`Game ${roomId} is full.`)
+        return callback('MAX')
     }
 
     // Join room
@@ -125,6 +126,7 @@ async function onJoinGameRequest(
 
     console.log(`Player ${socket.id} successfully joined room ${roomId}`)
     await emitUpdatedGameState(roomId)
+    return callback('OK')
 }
 
 async function onDeclareName(
@@ -201,7 +203,10 @@ async function onBeginGameRequest(
 ): Promise<void> {
     const player = await db.getPlayer(socket.id)
     const game = await db.getGame(player.roomId)
+
+    // Validation
     if (socket.id !== game.leader.socketId) return // Requestor is not the game leader
+    if (!gameCanStart(game)) return
 
     await db.updateGameField(player.roomId, 'status', 'choosing')
     const chooser = await db.getRandomChooserFromList(player.roomId)
@@ -263,13 +268,14 @@ async function rewardPointsToPlayer(socket: Socket): Promise<void> {
         )
 
     // Add efficiency points
-    const efficiencyPoints = EFFICIENCY_POINTS[player.guessResultHistory.length]
+    const efficiencyPoints =
+        GameParameters.EFFICIENCY_POINTS[player.guessResultHistory.length]
     player.score += efficiencyPoints
 
     // Add speed bonus
     const firstSolver = await db.getFirstSolver(player.roomId)
     if (firstSolver.socketId === player.socketId) {
-        player.score += SPEED_BONUS
+        player.score += GameParameters.SPEED_BONUS
     }
     await db.updatePlayer(player)
 }
@@ -319,7 +325,7 @@ async function rewardPointsToChooser(socket: Socket): Promise<void> {
     if (player.guessResultHistory.length <= 1) return // No points for chooser if player guessed on first try
 
     const maxGuesses = 5 * (Object.keys(game.playerList).length - 1)
-    const pointsPerGuess = MAX_CHOOSER_POINTS / maxGuesses
+    const pointsPerGuess = GameParameters.MAX_CHOOSER_POINTS / maxGuesses
     game.chooser.score += pointsPerGuess
 
     await db.updatePlayer(game.chooser)
@@ -327,7 +333,7 @@ async function rewardPointsToChooser(socket: Socket): Promise<void> {
 
 async function checkPlayerLastGuess(socket: Socket): Promise<void> {
     const player = await db.getPlayer(socket.id)
-    if (player.guessResultHistory.length >= MAX_NUM_GUESSES) {
+    if (player.guessResultHistory.length >= GameParameters.MAX_NUM_GUESSES) {
         console.log(`Player ${player.socketId} struck out!`)
         player.finished = true
         await db.updatePlayer(player)

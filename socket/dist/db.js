@@ -87,6 +87,8 @@ export async function updatePlayer(player) {
  */
 export async function deletePlayer(socketId) {
     const player = await getPlayer(socketId);
+    await deleteGuessResultHistory(socketId);
+    await removePlayerFromList(socketId, player.roomId);
     try {
         await redisClient.del(getRedisPlayerKey(socketId));
     }
@@ -94,8 +96,6 @@ export async function deletePlayer(socketId) {
         console.error(`DB error when deleting player ${socketId}.`);
         throw err;
     }
-    await deleteGuessResultHistory(socketId);
-    await removePlayerFromList(socketId, player.roomId);
 }
 function getRedisPlayerKey(socketId) {
     return `player:${socketId}`;
