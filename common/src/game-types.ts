@@ -17,7 +17,7 @@ export type EvaluationResponseData = {
  *                    MODELS                    *
  *                                              *
  ************************************************/
-export type GameStatus = "lobby" | "choosing" | "playing";
+export type GameStatus = "lobby" | "choosing" | "playing" | "end";
 
 export type Game = {
   roomId: string;
@@ -32,7 +32,6 @@ export type Player = {
   socketId: string;
   roomId: string;
   name: string;
-  isLeader: boolean;
   readonly guessResultHistory: Result[][];
   score: number;
   finished: boolean;

@@ -28,6 +28,7 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.REQUEST_BEGIN_GAME, () => onBeginGameRequest(newSocket));
     newSocket.on(GameEvents.CHECK_CHOSEN_WORD_VALID, onCheckChosenWordValid);
     newSocket.on(GameEvents.CHOOSE_WORD, (word) => onChooseWord(newSocket, word));
+    newSocket.on(GameEvents.START_OVER, () => onStartOver(newSocket));
 });
 /************************************************
  *                                              *
@@ -131,9 +132,12 @@ async function onBeginGameRequest(socket) {
         return; // Requestor is not the game leader
     if (!gameCanStart(game))
         return;
-    await db.updateGameField(player.roomId, 'status', 'choosing');
     const chooser = await db.getRandomChooserFromList(player.roomId);
-    await db.updateGameField(player.roomId, 'chooser', chooser.socketId);
+    if (!chooser)
+        throw new Error(`Invalid state: game ${game.roomId} starting without any available choosers.`);
+    game.status = 'choosing';
+    game.chooser = chooser;
+    await db.updateGame(game);
     io.to(player.roomId).emit(GameEvents.BEGIN_GAME);
     await emitUpdatedGameState(player.roomId);
 }
@@ -148,8 +152,10 @@ async function onChooseWord(socket, word) {
         return;
     }
     const player = await db.getPlayer(socket.id);
-    await db.updateGameField(player.roomId, 'status', 'playing');
-    await db.updateGameField(player.roomId, 'currentAnswer', word);
+    const game = await db.getGame(player.roomId);
+    game.status = 'playing';
+    game.currentAnswer = word;
+    await db.updateGame(game);
     await emitUpdatedGameState(player.roomId);
 }
 /************************************************
@@ -161,6 +167,7 @@ async function emitUpdatedGameState(roomId) {
     if (!(await db.gameExists(roomId)))
         return;
     const gameStateData = await db.getGame(roomId);
+    console.log(`Sending gameStateData to room ${roomId}`);
     io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData);
 }
 async function validateAnswerWord(word) {
@@ -193,13 +200,17 @@ async function allPlayersHaveSolved(roomId) {
     return (Object.values(game.playerList).filter((player) => player.socketId !== game.chooser?.socketId && !player.finished).length === 0);
 }
 async function resetForNewRound(roomId) {
-    if (!(await db.gameExists(roomId)))
-        throw new Error(`Invalid state: tried to reset game ${roomId} which doesn't exist.`);
-    await db.updateGameField(roomId, 'status', 'choosing');
     await db.resetPlayersFinished(roomId);
-    // TODO: check if last round
     const chooser = await db.getRandomChooserFromList(roomId);
-    await db.updateGameField(roomId, 'chooser', chooser.socketId);
+    const game = await db.getGame(roomId);
+    if (chooser) {
+        game.status = 'choosing';
+        game.chooser = chooser;
+    }
+    else {
+        game.status = 'end';
+    }
+    await db.updateGame(game);
 }
 async function rewardPointsToChooser(socket) {
     const player = await db.getPlayer(socket.id);
@@ -222,4 +233,15 @@ async function checkPlayerLastGuess(socket) {
         player.finished = true;
         await db.updatePlayer(player);
     }
+}
+async function onStartOver(socket) {
+    const player = await db.getPlayer(socket.id);
+    const game = await db.getGame(player.roomId);
+    for (const player of Object.values(game.playerList)) {
+        player.score = 0;
+        await db.updatePlayer(player);
+    }
+    await db.resetChoosersForNewGame(game.roomId);
+    await resetForNewRound(game.roomId);
+    await emitUpdatedGameState(game.roomId);
 }

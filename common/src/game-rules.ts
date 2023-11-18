@@ -1,4 +1,4 @@
-import { Game } from "./types";
+import { Game } from "./game-types";
 import { MIN_PLAYERS, MAX_PLAYERS } from "./game-parameters.js";
 
 export function gameCanStart(game: Game): boolean {

@@ -1,5 +1,5 @@
 import * as GameEvents from "./game-events.js";
-import * as types from "./types.js";
+import * as types from "./game-types.js";
 
 export interface ServerToClientEvents {
   [GameEvents.EVALUATION]: (data: types.EvaluationResponseData) => void;
@@ -11,16 +11,23 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
-  [GameEvents.DECLARE_NAME]: (playerName: string, callback: (result : {accepted: boolean, duplicate: boolean}) => void) => void;
+  [GameEvents.DECLARE_NAME]: (
+    playerName: string,
+    callback: (result: { accepted: boolean; duplicate: boolean }) => void
+  ) => void;
   [GameEvents.GUESS]: (guess: string) => void;
   [GameEvents.REQUEST_NEW_GAME]: () => void;
-  [GameEvents.REQUEST_JOIN_GAME]: (room: string, callback: (response: JoinRequestResponse) => void) => void;
+  [GameEvents.REQUEST_JOIN_GAME]: (
+    room: string,
+    callback: (response: JoinRequestResponse) => void
+  ) => void;
   [GameEvents.REQUEST_BEGIN_GAME]: () => void;
   [GameEvents.CHECK_CHOSEN_WORD_VALID]: (
     word: string,
     callback: (isValid: boolean) => void
   ) => void;
   [GameEvents.CHOOSE_WORD]: (word: string) => void;
+  [GameEvents.START_OVER]: () => void;
 }
 
-export type JoinRequestResponse = "OK" | "DNE" | "MAX"
+export type JoinRequestResponse = "OK" | "DNE" | "MAX";

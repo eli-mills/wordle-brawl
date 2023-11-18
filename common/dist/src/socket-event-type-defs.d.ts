@@ -1,5 +1,5 @@
 import * as GameEvents from "./game-events.js";
-import * as types from "./types.js";
+import * as types from "./game-types.js";
 export interface ServerToClientEvents {
     [GameEvents.EVALUATION]: (data: types.EvaluationResponseData) => void;
     [GameEvents.UPDATE_GAME_STATE]: (data: types.Game) => void;
@@ -19,6 +19,7 @@ export interface ClientToServerEvents {
     [GameEvents.REQUEST_BEGIN_GAME]: () => void;
     [GameEvents.CHECK_CHOSEN_WORD_VALID]: (word: string, callback: (isValid: boolean) => void) => void;
     [GameEvents.CHOOSE_WORD]: (word: string) => void;
+    [GameEvents.START_OVER]: () => void;
 }
 export type JoinRequestResponse = "OK" | "DNE" | "MAX";
 //# sourceMappingURL=socket-event-type-defs.d.ts.map
