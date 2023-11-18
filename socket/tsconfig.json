@@ -8,11 +8,15 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "typeRoots": ["node_modules/@types"],
+        "rootDir": "./src",
         "outDir": "./dist",
       },
-    "files": [
-        "./src/server.ts"
-    ],
+    // "files": [
+    //     "./src/server.ts",
+    //     "./src/socket.ts",
+    //     "./src/evaluation.ts",
+    //     "./src/db.ts"
+    // ],
     "references": [
         { "path":  "../common"}
     ]

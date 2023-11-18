@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { GlobalContext } from '@/pages/_app';
 import GuessGroup from '@/components/GuessGroup';
 import Keyboard from '@/components/Keyboard';
+import style from '@/styles/GamePanel.module.css';
 
 export default function GamePanel() {
+    const { player } = useContext(GlobalContext);
     const [guesses, setGuesses] = useState(
         [
             Array(5).fill(""),
@@ -30,9 +33,9 @@ export default function GamePanel() {
     }
 
     return (
-        <>
+        <div className={style.gamePanel}>
             <GuessGroup guesses={guesses}/>
-            <Keyboard {...keyboardProps}/>
-        </>
+            <Keyboard {...keyboardProps} />
+        </div>
     );
 }

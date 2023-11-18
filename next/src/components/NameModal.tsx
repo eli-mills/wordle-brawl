@@ -1,29 +1,44 @@
-import { Socket } from 'socket.io-client';
-import { useContext } from 'react';
-import { GlobalContext } from '@/pages/_app';
-import { GameEvents } from '../../../common';
+import { useState, useContext, FormEvent, useEffect } from "react";
+import { GlobalContext } from "@/pages/_app";
+import { GameEvents } from "../../../common";
 
 type NameModalArgs = {
-    socket: Socket | undefined,
-    setDisplayModal : (_ : boolean) => void
-}
+  setDisplayModal: (_: boolean) => void;
+};
 
-export default function NameModal({socket, setDisplayModal} : NameModalArgs) {
-    const { playerName, setName } = useContext(GlobalContext);
+export default function NameModal({ setDisplayModal }: NameModalArgs) {
+  const [playerName, setName] = useState("");
+  const [showDuplicateNameMsg, setShowDuplicateNameMsg] = useState(false);
+  const { socket } = useContext(GlobalContext);
 
-    const onButtonClick = () => {
-        socket?.emit(GameEvents.DECLARE_NAME, playerName);
+  const onButtonClick = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    socket?.emit(GameEvents.DECLARE_NAME, playerName, (result) => {
+      if (result.accepted) {
         setDisplayModal(false);
-    }
+      } else {
+          result.duplicate && setShowDuplicateNameMsg(true);
+      }
+    });
+    return false;
+  };
 
-    return (
-        <div className="nameModalBackground">
-            <div className="nameModal">
-                <input type="text" 
-                onChange={e => setName(e.target.value)}
-                onKeyUp={e => e.stopPropagation()}/>
-                <button className="submitName" onClick={onButtonClick}>Submit</button>
-            </div>
-        </div>
-    )
+  return (
+    <div className="nameModalBackground">
+      <form className="nameModal" onSubmit={onButtonClick}>
+        <input
+          type="text"
+          onChange={(e) => {
+            setName(e.target.value);
+            setShowDuplicateNameMsg(false);
+          }}
+          onKeyUp={(e) => e.stopPropagation()}
+        />
+        {showDuplicateNameMsg && <p color="red"> Name is already in use </p>}
+        <button className="submitName" type="submit">
+          Submit
+        </button>
+      </form>
+    </div>
+  );
 }

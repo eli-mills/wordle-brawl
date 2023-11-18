@@ -1,7 +1,6 @@
 import { useContext, useEffect } from 'react';
 import { GlobalContext } from '@/pages/_app';
 import { 
-    EvaluationRequestData, 
     EvaluationResponseData,
     GameEvents,
     Result 
@@ -46,19 +45,21 @@ export default function Keyboard({
      *                  REACT STATE                     *
      *                                                  *
     ****************************************************/
-    const { socket } = useContext(GlobalContext);
+    const { socket, player } = useContext(GlobalContext);
     
     // Socket listeners
     useEffect(() => {
         socket && socket.on(GameEvents.EVALUATION, handleEvaluation);
         return () => {socket && socket.off(GameEvents.EVALUATION)}; // cleanup
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket, currentGuessNum]);
 
     // Window listeners
     useEffect( () => {
         window.addEventListener("keyup", handleKeyPressEvent);
         return () => window.removeEventListener("keyup", handleKeyPressEvent);
-    }, [socket, currentLetterNum, currentGuessNum]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socket, currentLetterNum, currentGuessNum, player]);
 
     /**************************************************** 
      *                                                  *
@@ -66,6 +67,7 @@ export default function Keyboard({
      *                                                  *
     ****************************************************/
     const handleKeyPressEvent = (e: KeyboardEvent) => {
+        if (player?.solved) return;
         const letters = "QWERTYUIOPASDFGHJKLZXCVBNM";
         if (e.key === "Enter") {
             trySubmitGuess();
@@ -108,12 +110,10 @@ export default function Keyboard({
     }
     
     const evaluateGuess = () => {
-        const evalRequest : EvaluationRequestData = {
-            guess: guesses[currentGuessNum].join("")
-        }
+        const guess = guesses[currentGuessNum].join("");
         if (socket) {
             console.log("emitting guess");
-            socket.emit(GameEvents.GUESS, evalRequest);
+            socket.emit(GameEvents.GUESS, guess);
         };
     }
 

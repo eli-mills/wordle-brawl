@@ -1,37 +1,40 @@
-import Link from 'next/link';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { GlobalContext } from './_app';
 import { useEffect, useContext, useState } from 'react';
-import { JoinRoomRequestData, Game, GameEvents } from "../../../common";
+import { GameEvents } from "../../../common";
 import NameModal from '@/components/NameModal';
-
 
 export default function LobbyPage() {
     const {
         socket, 
-        opponentList,
-        setOpponentList,
-        room,
-        setRoom
+        player, 
+        game
     } = useContext(GlobalContext);
     const router = useRouter();
     const { room: queryRoom } = router.query as {room: string};
     const [displayModal, setDisplayModal] = useState<boolean>(true);
 
     useEffect(()=>{
-        const joinRoomRequest : JoinRoomRequestData = { room: queryRoom };
-        queryRoom && socket && console.log(`Sending joinRoomRequest for room ${queryRoom}`);
-        queryRoom && socket?.emit(GameEvents.REQUEST_JOIN_GAME, joinRoomRequest)
-    }, [queryRoom]);
+        queryRoom && socket?.emit(GameEvents.REQUEST_JOIN_GAME, queryRoom)
+    }, [queryRoom, socket]);
 
     useEffect(()=> {
-        socket?.on(GameEvents.GAME_DNE, () => alert("The requested room does not exist."));
+        socket?.on(GameEvents.GAME_DNE, () => {
+            alert("The requested room does not exist.");
+            router.push("/");
+        });
+
+        socket?.on(GameEvents.BEGIN_GAME, () => {
+            router.push("/game");
+        });
+
         return () => {
             socket?.off(GameEvents.GAME_DNE);
+            socket?.off(GameEvents.BEGIN_GAME);
         }
-    }, []);
-
+    }, [router, socket]);
+    
     return (
         <>
             <Head>
@@ -39,12 +42,12 @@ export default function LobbyPage() {
             </Head>
             <main>
                 {socket && (<div>
-                    <h1>Room {room}</h1>
+                    <h1>Room {game?.roomId}</h1>
                     <ul>
-                        {opponentList.map((player, index) => <li key={index}>{player.name}</li>)}
+                        {game?.playerList && Object.values(game.playerList).map((currPlayer, index) => <li key={index}>{currPlayer.name}</li>)}
                     </ul>
-                    {displayModal && <NameModal socket={socket} setDisplayModal={setDisplayModal}/>}
-                    <Link href={"/game"}>Start Game</Link>
+                    {displayModal && <NameModal setDisplayModal={setDisplayModal}/>}
+                    {player?.name && (player?.socketId === game?.leader.socketId) && <button onClick={()=>socket?.emit(GameEvents.REQUEST_BEGIN_GAME)}>Start Game</button>}
                 </div>)}
                 {!socket && <h1>NOT CONNECTED</h1>}
             </main>
