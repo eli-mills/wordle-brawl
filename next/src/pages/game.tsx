@@ -2,6 +2,7 @@ import Head from "next/head";
 import GamePanel from "@/components/GamePanel";
 import OpponentPanel from "@/components/OpponentPanel";
 import ChoosingPanel from "@/components/ChoosingPanel";
+import GameOverPanel from "@/components/GameOverPanel";
 import { GlobalContext } from "./_app";
 import { useContext } from "react";
 
@@ -33,6 +34,7 @@ export default function GamePage() {
           ) : (
             <ChoosingPanel />
           ))}
+        {game?.status === "end" && <GameOverPanel />}
       </main>
     </>
   );
