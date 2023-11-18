@@ -158,23 +158,50 @@ export async function getGame(roomId) {
         chooser,
     };
 }
+// /**
+//  * Sets one of a game's fields to the given value
+//  *
+//  * Source for typing: https://stackoverflow.com/questions/49285864/is-there-a-valueof-similar-to-keyof-in-typescript
+//  * @param roomId : ID of the room the game is being hosted in
+//  * @param field : field to update
+//  * @param value : value to save to field
+//  */
+// export async function updateGameField<
+//     K extends keyof Omit<DbGame, 'speedBonusWinner'>,
+// >(roomId: string, field: K, value: DbGame[K]): Promise<void> {
+//     try {
+//         await redisClient.hSet(getRedisGameKey(roomId), field, value)
+//     } catch (err) {
+//         console.error(
+//             `DB error when setting game ${roomId} field ${field} to value ${value}`
+//         )
+//         throw err
+//     }
+//     console.log(`Set game ${roomId} ${field} to ${value}`)
+// }
+function convertGameToDbGame(game) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { playerList, ...gameSansPlayerList } = game;
+    return {
+        ...gameSansPlayerList,
+        chooser: game.chooser?.socketId ?? '',
+        leader: game.leader.socketId,
+    };
+}
 /**
- * Sets one of a game's fields to the given value
+ * Updates game in DB to have given values
  *
- * Source for typing: https://stackoverflow.com/questions/49285864/is-there-a-valueof-similar-to-keyof-in-typescript
- * @param roomId : ID of the room the game is being hosted in
- * @param field : field to update
- * @param value : value to save to field
+ * @param game: the Game to update with current values
  */
-export async function updateGameField(roomId, field, value) {
+export async function updateGame(game) {
+    const dbGame = convertGameToDbGame(game);
     try {
-        await redisClient.hSet(getRedisGameKey(roomId), field, value);
+        await redisClient.hSet(getRedisGameKey(game.roomId), dbGame);
     }
     catch (err) {
-        console.error(`DB error when setting game ${roomId} field ${field} to value ${value}`);
+        console.error(`DB error when updating game ${game.roomId} to value ${JSON.stringify(dbGame)}`);
         throw err;
     }
-    console.log(`Set game ${roomId} ${field} to ${value}`);
 }
 /**
  * Removes given Game from DB.
@@ -347,7 +374,7 @@ export async function getRandomChooserFromList(roomId) {
         throw err;
     }
     if (!chooserId)
-        throw new Error(`Invalid state: random chooser requested for game ${roomId}, no players remain in list.`);
+        return null;
     await addPlayerToChooserList(chooserId, roomId);
     return await getPlayer(chooserId);
 }
@@ -467,34 +494,24 @@ async function deletePlayerList(roomId) {
  * @returns : true if game deleted, else false
  */
 async function deleteGameIfListEmpty(roomId) {
-    try {
-        if (await redisClient.exists(getRedisPlayerListKey(roomId))) {
-            return false;
-        }
+    const playerList = await getPlayerList(roomId);
+    if (Object.keys(playerList).length === 0) {
+        console.log(`List empty, deleting game ${roomId}`);
+        await deleteGame(roomId);
+        return true;
     }
-    catch (err) {
-        console.error(`DB error when checking if playerList ${roomId} exists`);
-        throw err;
-    }
-    console.log(`List empty, deleting game ${roomId}`);
-    await deleteGame(roomId);
-    return true;
+    return false;
 }
 async function replaceLeaderIfRemoved(removedSocketId, roomId) {
-    let newLeaderId;
     const game = await getGame(roomId);
     if (removedSocketId !== game.leader.socketId)
         return;
     // Leader deleted, replace leader
     console.log(`Player ${game.leader.socketId} was the leader, need replacement.`);
-    try {
-        newLeaderId = await redisClient.sRandMember(getRedisPlayerListKey(roomId));
-    }
-    catch (err) {
-        console.error(`DB error when retrieving new leaderId for game ${roomId}`);
-        throw err;
-    }
-    if (!newLeaderId)
+    const playerList = await getPlayerList(roomId);
+    if (Object.keys(playerList).length === 0) {
         throw new Error(`Invalid state: replaceLeader called on game ${roomId} with empty playerList`);
-    await updateGameField(roomId, 'leader', newLeaderId);
+    }
+    game.leader = playerList[Object.keys(playerList)[0]];
+    await updateGame(game);
 }

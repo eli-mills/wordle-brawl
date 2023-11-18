@@ -1,5 +1,5 @@
 import * as GameEvents from "./game-events.js";
-import * as types from "./types.js";
+import * as types from "./game-types.js";
 export interface ServerToClientEvents {
     [GameEvents.EVALUATION]: (data: types.EvaluationResponseData) => void;
     [GameEvents.UPDATE_GAME_STATE]: (data: types.Game) => void;

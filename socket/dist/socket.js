@@ -131,9 +131,12 @@ async function onBeginGameRequest(socket) {
         return; // Requestor is not the game leader
     if (!gameCanStart(game))
         return;
-    await db.updateGameField(player.roomId, 'status', 'choosing');
     const chooser = await db.getRandomChooserFromList(player.roomId);
-    await db.updateGameField(player.roomId, 'chooser', chooser.socketId);
+    if (!chooser)
+        throw new Error(`Invalid state: game ${game.roomId} starting without any available choosers.`);
+    game.status = 'choosing';
+    game.chooser = chooser;
+    await db.updateGame(game);
     io.to(player.roomId).emit(GameEvents.BEGIN_GAME);
     await emitUpdatedGameState(player.roomId);
 }
@@ -148,8 +151,10 @@ async function onChooseWord(socket, word) {
         return;
     }
     const player = await db.getPlayer(socket.id);
-    await db.updateGameField(player.roomId, 'status', 'playing');
-    await db.updateGameField(player.roomId, 'currentAnswer', word);
+    const game = await db.getGame(player.roomId);
+    game.status = 'playing';
+    game.currentAnswer = word;
+    await db.updateGame(game);
     await emitUpdatedGameState(player.roomId);
 }
 /************************************************
@@ -193,13 +198,17 @@ async function allPlayersHaveSolved(roomId) {
     return (Object.values(game.playerList).filter((player) => player.socketId !== game.chooser?.socketId && !player.finished).length === 0);
 }
 async function resetForNewRound(roomId) {
-    if (!(await db.gameExists(roomId)))
-        throw new Error(`Invalid state: tried to reset game ${roomId} which doesn't exist.`);
-    await db.updateGameField(roomId, 'status', 'choosing');
     await db.resetPlayersFinished(roomId);
-    // TODO: check if last round
     const chooser = await db.getRandomChooserFromList(roomId);
-    await db.updateGameField(roomId, 'chooser', chooser.socketId);
+    const game = await db.getGame(roomId);
+    if (chooser) {
+        game.status = 'choosing';
+        game.chooser = chooser;
+    }
+    else {
+        game.status = 'end';
+    }
+    await db.updateGame(game);
 }
 async function rewardPointsToChooser(socket) {
     const player = await db.getPlayer(socket.id);

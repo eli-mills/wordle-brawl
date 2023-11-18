@@ -17,7 +17,7 @@ export type EvaluationResponseData = {
  *                    MODELS                    *
  *                                              *
  ************************************************/
-export type GameStatus = "lobby" | "choosing" | "playing";
+export type GameStatus = "lobby" | "choosing" | "playing" | "end";
 
 export type Game = {
   roomId: string;
