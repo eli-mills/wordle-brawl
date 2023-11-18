@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import * as db from './db.js';
-import { GameEvents, GameParameters } from '../../common/dist/index.js';
+import { GameEvents, GameParameters, gameCanStart, } from '../../common/dist/index.js';
 import { evaluateGuess, FileWordValidator, ALLOWED_ANSWERS_PATH, } from './evaluation.js';
 /************************************************
  *                                              *
@@ -58,11 +58,11 @@ async function onJoinGameRequest(socket, roomId, callback) {
     const game = await db.getGame(roomId);
     if (!(await db.gameExists(roomId))) {
         console.log(`Game ${roomId} does not exist`);
-        return callback("DNE");
+        return callback('DNE');
     }
     if (Object.keys(game.playerList).length >= GameParameters.MAX_PLAYERS) {
         console.log(`Game ${roomId} is full.`);
-        return callback("MAX");
+        return callback('MAX');
     }
     // Join room
     socket.join(roomId);
@@ -72,7 +72,7 @@ async function onJoinGameRequest(socket, roomId, callback) {
     await db.addPlayerToList(socket.id, roomId);
     console.log(`Player ${socket.id} successfully joined room ${roomId}`);
     await emitUpdatedGameState(roomId);
-    return callback("OK");
+    return callback('OK');
 }
 async function onDeclareName(socket, name, callback) {
     const player = await db.getPlayer(socket.id);
@@ -129,10 +129,8 @@ async function onBeginGameRequest(socket) {
     // Validation
     if (socket.id !== game.leader.socketId)
         return; // Requestor is not the game leader
-    if (Object.keys(game.playerList).length < GameParameters.MIN_PLAYERS ||
-        Object.keys(game.playerList).length > GameParameters.MAX_PLAYERS) {
+    if (!gameCanStart(game))
         return;
-    }
     await db.updateGameField(player.roomId, 'status', 'choosing');
     const chooser = await db.getRandomChooserFromList(player.roomId);
     await db.updateGameField(player.roomId, 'chooser', chooser.socketId);

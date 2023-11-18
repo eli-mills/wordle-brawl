@@ -6,7 +6,8 @@ import {
     ClientToServerEvents,
     ServerToClientEvents,
     GameParameters,
-    JoinRequestResponse
+    JoinRequestResponse,
+    gameCanStart,
 } from '../../common/dist/index.js'
 import {
     evaluateGuess,
@@ -39,8 +40,10 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.REQUEST_NEW_GAME, () =>
         onCreateGameRequest(newSocket)
     )
-    newSocket.on(GameEvents.REQUEST_JOIN_GAME, (roomId: string, callback: (response: JoinRequestResponse) => void) =>
-        onJoinGameRequest(newSocket, roomId, callback)
+    newSocket.on(
+        GameEvents.REQUEST_JOIN_GAME,
+        (roomId: string, callback: (response: JoinRequestResponse) => void) =>
+            onJoinGameRequest(newSocket, roomId, callback)
     )
     newSocket.on(
         GameEvents.DECLARE_NAME,
@@ -105,12 +108,12 @@ async function onJoinGameRequest(
 
     if (!(await db.gameExists(roomId))) {
         console.log(`Game ${roomId} does not exist`)
-        return callback("DNE")
+        return callback('DNE')
     }
 
     if (Object.keys(game.playerList).length >= GameParameters.MAX_PLAYERS) {
         console.log(`Game ${roomId} is full.`)
-        return callback("MAX")
+        return callback('MAX')
     }
 
     // Join room
@@ -123,7 +126,7 @@ async function onJoinGameRequest(
 
     console.log(`Player ${socket.id} successfully joined room ${roomId}`)
     await emitUpdatedGameState(roomId)
-    return callback("OK")
+    return callback('OK')
 }
 
 async function onDeclareName(
@@ -203,12 +206,7 @@ async function onBeginGameRequest(
 
     // Validation
     if (socket.id !== game.leader.socketId) return // Requestor is not the game leader
-    if (
-        Object.keys(game.playerList).length < GameParameters.MIN_PLAYERS ||
-        Object.keys(game.playerList).length > GameParameters.MAX_PLAYERS
-    ) {
-        return
-    }
+    if (!gameCanStart(game)) return
 
     await db.updateGameField(player.roomId, 'status', 'choosing')
     const chooser = await db.getRandomChooserFromList(player.roomId)

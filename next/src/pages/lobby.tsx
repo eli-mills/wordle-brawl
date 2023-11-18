@@ -2,7 +2,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { GlobalContext } from "./_app";
 import { useEffect, useContext, useState } from "react";
-import { GameEvents, GameParameters } from "../../../common";
+import { GameEvents, GameParameters, gameCanStart } from "../../../common";
 import NameModal from "@/components/NameModal";
 
 export default function LobbyPage() {
@@ -13,17 +13,17 @@ export default function LobbyPage() {
 
   useEffect(() => {
     queryRoom &&
-        socket?.emit(GameEvents.REQUEST_JOIN_GAME, queryRoom, (response) => {
-            switch (response) {
-                case "DNE":
-                    alert("The requested game does not exist.");
-                    router.push("/");
-                    break;
-                case "MAX":
-                    alert("The requested game is full.");
-                    router.push("/");
-                    break;
-          }
+      socket?.emit(GameEvents.REQUEST_JOIN_GAME, queryRoom, (response) => {
+        switch (response) {
+          case "DNE":
+            alert("The requested game does not exist.");
+            router.push("/");
+            break;
+          case "MAX":
+            alert("The requested game is full.");
+            router.push("/");
+            break;
+        }
       });
   }, [queryRoom, router, socket]);
 
@@ -53,16 +53,9 @@ export default function LobbyPage() {
                 ))}
             </ul>
             {displayModal && <NameModal setDisplayModal={setDisplayModal} />}
-            {player?.name &&
-              player?.socketId === game?.leader.socketId &&
-              !(
-                Object.keys(game?.playerList).length <
-                GameParameters.MIN_PLAYERS
-              ) &&
-              !(
-                Object.keys(game?.playerList).length >
-                GameParameters.MAX_PLAYERS
-              ) && (
+            {player?.socketId === game?.leader.socketId &&
+              game &&
+              gameCanStart(game) && (
                 <button
                   onClick={() => socket?.emit(GameEvents.REQUEST_BEGIN_GAME)}
                 >
