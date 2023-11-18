@@ -29,9 +29,8 @@ export async function initializeDbConn(): Promise<void> {
 
 type DbPlayer = Omit<
     Player,
-    'guessResultHistory' | 'isLeader' | 'finished' | 'score'
+    'guessResultHistory' | 'finished' | 'score'
 > & {
-    isLeader: RedisBool
     finished: RedisBool
     score: string
 }
@@ -46,7 +45,6 @@ export async function createPlayer(socketId: string): Promise<void> {
         socketId,
         roomId: '',
         name: '',
-        isLeader: 'false',
         score: '0',
         finished: 'false',
     }
@@ -86,7 +84,6 @@ export async function getPlayer(socketId: string): Promise<Player> {
         ...(player as DbPlayer),
         score: Number.parseInt(player.score),
         guessResultHistory,
-        isLeader: player.isLeader === 'true',
         finished: player.finished === 'true',
     }
 }
@@ -97,7 +94,6 @@ function convertPlayerToDbPlayer(player: Player): DbPlayer {
 
     return {
         ...rest,
-        isLeader: player.isLeader ? 'true' : 'false',
         finished: player.finished ? 'true' : 'false',
         score: `${player.score}`,
     }
@@ -219,28 +215,6 @@ export async function getGame(roomId: string): Promise<Game> {
         chooser,
     }
 }
-
-// /**
-//  * Sets one of a game's fields to the given value
-//  *
-//  * Source for typing: https://stackoverflow.com/questions/49285864/is-there-a-valueof-similar-to-keyof-in-typescript
-//  * @param roomId : ID of the room the game is being hosted in
-//  * @param field : field to update
-//  * @param value : value to save to field
-//  */
-// export async function updateGameField<
-//     K extends keyof Omit<DbGame, 'speedBonusWinner'>,
-// >(roomId: string, field: K, value: DbGame[K]): Promise<void> {
-//     try {
-//         await redisClient.hSet(getRedisGameKey(roomId), field, value)
-//     } catch (err) {
-//         console.error(
-//             `DB error when setting game ${roomId} field ${field} to value ${value}`
-//         )
-//         throw err
-//     }
-//     console.log(`Set game ${roomId} ${field} to ${value}`)
-// }
 
 function convertGameToDbGame(game: Game): DbGame {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -660,4 +634,18 @@ async function replaceLeaderIfRemoved(
 
     game.leader = playerList[Object.keys(playerList)[0]]
     await updateGame(game)
+}
+
+export async function resetChoosersForNewGame(roomId: string): Promise<void> {
+    let chooserIdList: string[]
+    try {
+        chooserIdList = await redisClient.sMembers(getRedisChooserListKey(roomId))
+    } catch (err) {
+        console.error(`DB error when retrieving chooserList ${roomId}`)
+        throw err
+    }
+
+    for (const socketId of chooserIdList) {
+        await addPlayerToList(socketId, roomId)
+    }
 }

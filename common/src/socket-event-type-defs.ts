@@ -27,6 +27,7 @@ export interface ClientToServerEvents {
     callback: (isValid: boolean) => void
   ) => void;
   [GameEvents.CHOOSE_WORD]: (word: string) => void;
+  [GameEvents.START_OVER]: () => void;
 }
 
 export type JoinRequestResponse = "OK" | "DNE" | "MAX";

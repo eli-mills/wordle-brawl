@@ -64,6 +64,7 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.CHOOSE_WORD, (word: string) =>
         onChooseWord(newSocket, word)
     )
+    newSocket.on(GameEvents.START_OVER, () => onStartOver(newSocket))
 })
 
 /************************************************
@@ -255,6 +256,7 @@ async function onChooseWord(socket: Socket, word: string): Promise<void> {
 async function emitUpdatedGameState(roomId: string): Promise<void> {
     if (!(await db.gameExists(roomId))) return
     const gameStateData = await db.getGame(roomId)
+    console.log(`Sending gameStateData to room ${roomId}`)
     io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData)
 }
 
@@ -347,4 +349,17 @@ async function checkPlayerLastGuess(socket: Socket): Promise<void> {
         player.finished = true
         await db.updatePlayer(player)
     }
+}
+async function onStartOver(socket: Socket): Promise<void> {
+    const player = await db.getPlayer(socket.id)
+    const game = await db.getGame(player.roomId)
+
+    for (const player of Object.values(game.playerList)) {
+        player.score = 0
+        await db.updatePlayer(player)
+    }
+
+    await db.resetChoosersForNewGame(game.roomId)
+    await resetForNewRound(game.roomId)
+    await emitUpdatedGameState(game.roomId)
 }

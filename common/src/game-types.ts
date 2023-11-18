@@ -32,7 +32,6 @@ export type Player = {
   socketId: string;
   roomId: string;
   name: string;
-  isLeader: boolean;
   readonly guessResultHistory: Result[][];
   score: number;
   finished: boolean;
