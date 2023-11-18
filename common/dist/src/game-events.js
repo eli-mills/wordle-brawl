@@ -11,6 +11,5 @@ export const EVALUATION = "evaluation";
 export const UPDATE_GAME_STATE = "update-game-state";
 export const UPDATE_PLAYER = "update-player";
 export const NEW_GAME_CREATED = "new-game-created";
-export const GAME_DNE = "game-dne";
 export const NO_ROOMS_AVAILABLE = "no-rooms-available";
 export const BEGIN_GAME = "begin-game";
