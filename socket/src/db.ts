@@ -125,15 +125,14 @@ export async function updatePlayer(player: Player): Promise<void> {
 export async function deletePlayer(socketId: string): Promise<void> {
     const player = await getPlayer(socketId)
 
+    await deleteGuessResultHistory(socketId)
+    await removePlayerFromList(socketId, player.roomId)
     try {
         await redisClient.del(getRedisPlayerKey(socketId))
     } catch (err) {
         console.error(`DB error when deleting player ${socketId}.`)
         throw err
     }
-
-    await deleteGuessResultHistory(socketId)
-    await removePlayerFromList(socketId, player.roomId)
 }
 
 function getRedisPlayerKey(socketId: string): string {
