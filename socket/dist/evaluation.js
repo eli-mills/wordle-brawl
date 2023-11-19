@@ -21,6 +21,33 @@ export class FileWordValidator {
             file.close();
         }
     }
+    async getRandomValidWord() {
+        let file = await fsPromises.open(this.filePath);
+        try {
+            let numberOfLines = 0;
+            let output = '';
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            for await (const word of file.readLines()) {
+                numberOfLines += 1;
+            }
+            console.log(`Random word: total number of lines = ${numberOfLines}`);
+            let randomLineNumber = Math.floor(Math.random() * numberOfLines);
+            console.log(`Picked random line: ${randomLineNumber}`);
+            file = await fsPromises.open(this.filePath);
+            for await (const word of file.readLines()) {
+                randomLineNumber--;
+                if (randomLineNumber <= 0) {
+                    output = word;
+                    break;
+                }
+            }
+            console.log(`Got random word ${output}`);
+            return output;
+        }
+        finally {
+            file.close();
+        }
+    }
 }
 function mutateIfHits(guess, solution, byPosition, byLetter) {
     for (let i = 0; i < 5; ++i) {

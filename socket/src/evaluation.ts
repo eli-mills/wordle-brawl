@@ -25,6 +25,34 @@ export class FileWordValidator implements WordValidator {
             file.close()
         }
     }
+
+    async getRandomValidWord(): Promise<string> {
+        let file = await fsPromises.open(this.filePath)
+        try {
+            let numberOfLines = 0
+            let output = ''
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            for await (const word of file.readLines()) {
+                numberOfLines += 1
+            }
+            console.log(`Random word: total number of lines = ${numberOfLines}`)
+            let randomLineNumber = Math.floor(Math.random() * numberOfLines)
+            console.log(`Picked random line: ${randomLineNumber}`)
+
+            file = await fsPromises.open(this.filePath)
+            for await (const word of file.readLines()) {
+                randomLineNumber--
+                if (randomLineNumber <= 0) {
+                    output = word
+                    break
+                }
+            }
+            console.log(`Got random word ${output}`)
+            return output.toUpperCase()
+        } finally {
+            file.close()
+        }
+    }
 }
 
 function mutateIfHits(
@@ -68,7 +96,7 @@ export async function evaluateGuess(
 
     if (!accepted) return { accepted, correct: false }
 
-    const game = await getGame(roomId);
+    const game = await getGame(roomId)
     const answerSplit = game.currentAnswer.split('')
 
     if (guess === game.currentAnswer)

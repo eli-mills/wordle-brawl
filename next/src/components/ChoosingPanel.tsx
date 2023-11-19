@@ -1,38 +1,51 @@
-import { useContext, useState, FormEvent } from "react"
+import { useContext, useState, useEffect } from "react"
 import { GlobalContext } from "@/pages/_app"
 import { GameEvents } from "../../../common";
 
 export default function ChoosingPanel() {
     const { socket } = useContext(GlobalContext);
     const [ chosenWord, setChosenWord ] = useState("");
-    const [ wordIsValid, setWordIsValid ] = useState(false);
+    const [wordIsValid, setWordIsValid] = useState(false);
+    
+    useEffect(() => {
+        if (chosenWord.length === 5) {
+            socket?.emit(GameEvents.CHECK_CHOSEN_WORD_VALID, chosenWord, (isValid: boolean) => {
+                setWordIsValid(isValid);
+            });
+        } else {
+            setWordIsValid(false)
+        }
+    }, [chosenWord, socket])
 
-    async function onWordChange(e: React.ChangeEvent<HTMLInputElement>) : Promise<void> {
+    function onWordChange(e: React.ChangeEvent<HTMLInputElement>) : void {
         const newWordUpper = e.target.value.toUpperCase();
         e.target.value = newWordUpper;
         setChosenWord(newWordUpper);
-        
-        if (newWordUpper.length === 5) {
-            socket?.emit(GameEvents.CHECK_CHOSEN_WORD_VALID, newWordUpper, (isValid: boolean) => {
-                setWordIsValid(isValid);
-            });
-        }
     }
 
-    const onFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+    const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         socket?.emit(GameEvents.CHOOSE_WORD, chosenWord)
         return false;
     }
 
+    const onRequestValidWord = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        socket?.emit(GameEvents.REQUEST_VALID_WORD, (validWord: string) => {
+            setChosenWord(validWord.toUpperCase());
+        })
+    }
+
     return (
         <>
-            <form onSubmit={onFormSubmit}>
+            <form onSubmit={onFormSubmit} autoComplete="off">
                 <h2> Pick a word for others to guess: </h2>
-                <input id="chosenWord" type="text" onChange={onWordChange} maxLength={5}/>
+                <input id="chosenWord" type="text" value={chosenWord} onChange={onWordChange} maxLength={5} />
+                { wordIsValid && <button type="submit"> Submit </button>}
                 { chosenWord.length < 5 && <p color="red"> Word must be 5 letters </p> }
                 { chosenWord.length === 5 && !wordIsValid && <p color="red"> Word is not valid </p> }
-                { chosenWord.length === 5 && wordIsValid && <button type="submit"> Submit </button> }
+                { wordIsValid && <p color="red"> Word is valid!</p>}
+                <button onClick={onRequestValidWord}> Get Random Word </button> 
             </form>
         </>
     )

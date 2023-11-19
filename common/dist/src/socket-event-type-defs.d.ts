@@ -20,6 +20,7 @@ export interface ClientToServerEvents {
     [GameEvents.CHECK_CHOSEN_WORD_VALID]: (word: string, callback: (isValid: boolean) => void) => void;
     [GameEvents.CHOOSE_WORD]: (word: string) => void;
     [GameEvents.START_OVER]: () => void;
+    [GameEvents.REQUEST_VALID_WORD]: (callback: (validWord: string) => void) => void;
 }
 export type JoinRequestResponse = "OK" | "DNE" | "MAX";
 //# sourceMappingURL=socket-event-type-defs.d.ts.map
