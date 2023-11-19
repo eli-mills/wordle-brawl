@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import Head from 'next/head'
 import { useState, useContext, useEffect } from 'react'
 import { useRouter } from 'next/router'
@@ -9,9 +8,10 @@ import {
     ServerToClientEvents,
     ClientToServerEvents,
 } from '../../../common'
+import style from '@/styles/Home.module.css'
 
 export default function HomePage() {
-    const [room, setRoom] = useState("")
+    const [room, setRoom] = useState('')
     const { socket, setSocket } = useContext(GlobalContext)
     const router = useRouter()
 
@@ -26,7 +26,7 @@ export default function HomePage() {
         })
     }, [router, setSocket])
 
-    function requestCreateRoom(e: any) {
+    const requestCreateRoom = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault()
         socket?.emit(GameEvents.REQUEST_NEW_GAME)
     }
@@ -41,17 +41,19 @@ export default function HomePage() {
             <Head>
                 <title>Wordle WS</title>
             </Head>
-            <main>
+            <main className={style.main}>
                 <h1> Wordle With Friends </h1>
-                <form onSubmit={onSubmit}>
-                    <input
-                        onChange={(e) => setRoom(e.target.value)}
-                        type="text"
-                    />
-                    <button type="submit">Join a Room</button>
+                <form className={style.roomForm} onSubmit={onSubmit}>
+                    <div>
+                        <input
+                            onChange={(e) => setRoom(e.target.value)}
+                            type="text"
+                            maxLength={4}
+                        />
+                        <button type="submit">Join a Room</button>
+                    </div>
+                    <button onClick={requestCreateRoom}>Create a Room</button>
                 </form>
-                <p>...or...</p>
-                <button onClick={requestCreateRoom}>Create a Room</button>
             </main>
         </>
     )
