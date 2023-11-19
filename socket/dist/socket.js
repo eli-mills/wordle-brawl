@@ -29,6 +29,7 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.CHECK_CHOSEN_WORD_VALID, onCheckChosenWordValid);
     newSocket.on(GameEvents.CHOOSE_WORD, (word) => onChooseWord(newSocket, word));
     newSocket.on(GameEvents.START_OVER, () => onStartOver(newSocket));
+    newSocket.on(GameEvents.REQUEST_VALID_WORD, onRequestValidWord);
 });
 /************************************************
  *                                              *
@@ -244,4 +245,9 @@ async function onStartOver(socket) {
     await db.resetChoosersForNewGame(game.roomId);
     await resetForNewRound(game.roomId);
     await emitUpdatedGameState(game.roomId);
+}
+async function onRequestValidWord(callback) {
+    const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH);
+    const validWord = await validator.getRandomValidWord();
+    callback(validWord);
 }

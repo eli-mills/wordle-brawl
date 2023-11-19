@@ -65,6 +65,7 @@ io.on('connection', async (newSocket) => {
         onChooseWord(newSocket, word)
     )
     newSocket.on(GameEvents.START_OVER, () => onStartOver(newSocket))
+    newSocket.on(GameEvents.REQUEST_VALID_WORD, onRequestValidWord )
 })
 
 /************************************************
@@ -363,3 +364,9 @@ async function onStartOver(socket: Socket): Promise<void> {
     await resetForNewRound(game.roomId)
     await emitUpdatedGameState(game.roomId)
 }
+async function onRequestValidWord(callback: (validWord: string) => void): Promise<void> {
+    const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH)
+    const validWord = await validator.getRandomValidWord()
+    callback(validWord);
+}
+
