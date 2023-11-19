@@ -42,7 +42,7 @@ export class FileWordValidator {
                 }
             }
             console.log(`Got random word ${output}`);
-            return output;
+            return output.toUpperCase();
         }
         finally {
             file.close();

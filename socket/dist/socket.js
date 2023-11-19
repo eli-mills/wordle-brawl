@@ -57,11 +57,11 @@ async function onCreateGameRequest(socket) {
 async function onJoinGameRequest(socket, roomId, callback) {
     console.log(`Player ${socket.id} requests to join room ${roomId}`);
     const player = await db.getPlayer(socket.id);
-    const game = await db.getGame(roomId);
     if (!(await db.gameExists(roomId))) {
         console.log(`Game ${roomId} does not exist`);
         return callback('DNE');
     }
+    const game = await db.getGame(roomId);
     if (Object.keys(game.playerList).length >= GameParameters.MAX_PLAYERS) {
         console.log(`Game ${roomId} is full.`);
         return callback('MAX');
