@@ -13,7 +13,7 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   [GameEvents.DECLARE_NAME]: (
     playerName: string,
-    callback: (result: { accepted: boolean; duplicate: boolean }) => void
+    callback: (result: DeclareNameResponse) => void
   ) => void;
   [GameEvents.GUESS]: (guess: string) => void;
   [GameEvents.REQUEST_NEW_GAME]: () => void;
@@ -34,3 +34,4 @@ export interface ClientToServerEvents {
 }
 
 export type JoinRequestResponse = "OK" | "DNE" | "MAX";
+export type DeclareNameResponse = "OK" | "DUP" | "EMPTY";

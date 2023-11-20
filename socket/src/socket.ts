@@ -7,6 +7,7 @@ import {
     ServerToClientEvents,
     GameParameters,
     JoinRequestResponse,
+    DeclareNameResponse,
     gameCanStart,
 } from '../../common/dist/index.js'
 import {
@@ -47,13 +48,8 @@ io.on('connection', async (newSocket) => {
     )
     newSocket.on(
         GameEvents.DECLARE_NAME,
-        (
-            name: string,
-            callback: (result: {
-                accepted: boolean
-                duplicate: boolean
-            }) => void
-        ) => onDeclareName(newSocket, name, callback)
+        (name: string, callback: (result: DeclareNameResponse) => void) =>
+            onDeclareName(newSocket, name, callback)
     )
     newSocket.on(GameEvents.GUESS, (guess: string) => onGuess(newSocket, guess))
     newSocket.on('disconnect', () => onDisconnect(newSocket))
@@ -65,7 +61,7 @@ io.on('connection', async (newSocket) => {
         onChooseWord(newSocket, word)
     )
     newSocket.on(GameEvents.START_OVER, () => onStartOver(newSocket))
-    newSocket.on(GameEvents.REQUEST_VALID_WORD, onRequestValidWord )
+    newSocket.on(GameEvents.REQUEST_VALID_WORD, onRequestValidWord)
 })
 
 /************************************************
@@ -106,12 +102,12 @@ async function onJoinGameRequest(
     console.log(`Player ${socket.id} requests to join room ${roomId}`)
 
     const player = await db.getPlayer(socket.id)
-    
+
     if (!(await db.gameExists(roomId))) {
         console.log(`Game ${roomId} does not exist`)
         return callback('DNE')
     }
-    
+
     const game = await db.getGame(roomId)
     if (Object.keys(game.playerList).length >= GameParameters.MAX_PLAYERS) {
         console.log(`Game ${roomId} is full.`)
@@ -134,20 +130,25 @@ async function onJoinGameRequest(
 async function onDeclareName(
     socket: Socket,
     name: string,
-    callback: (result: { accepted: boolean; duplicate: boolean }) => void
+    callback: (result: DeclareNameResponse) => void
 ) {
+    if (!/\S/.test(name)) {
+        console.log(`Player ${socket.id} declared empty name.`);
+        return callback('EMPTY')
+    }
+
     const player = await db.getPlayer(socket.id)
     const game = await db.getGame(player.roomId)
 
     // Check for duplicate name
-    const playerNames = Object.values(game.playerList).map(
-        (player) => player.name
-    )
+    const playerNames = Object.values(game.playerList)
+        .filter((player) => player.socketId !== socket.id)
+        .map((player) => player.name)
     if (playerNames.includes(name)) {
         console.log(
             `Duplicate name not allowed: player ${socket.id} requests ${name}`
         )
-        callback({ accepted: false, duplicate: true })
+        callback('DUP')
         return
     }
 
@@ -157,7 +158,7 @@ async function onDeclareName(
     await db.updatePlayer(player)
 
     // Response
-    callback({ accepted: true, duplicate: false })
+    callback('OK')
     await emitUpdatedGameState(player.roomId)
 }
 
@@ -364,9 +365,10 @@ async function onStartOver(socket: Socket): Promise<void> {
     await resetForNewRound(game.roomId)
     await emitUpdatedGameState(game.roomId)
 }
-async function onRequestValidWord(callback: (validWord: string) => void): Promise<void> {
+async function onRequestValidWord(
+    callback: (validWord: string) => void
+): Promise<void> {
     const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH)
     const validWord = await validator.getRandomValidWord()
-    callback(validWord);
+    callback(validWord)
 }
-

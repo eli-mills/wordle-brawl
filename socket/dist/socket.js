@@ -77,13 +77,19 @@ async function onJoinGameRequest(socket, roomId, callback) {
     return callback('OK');
 }
 async function onDeclareName(socket, name, callback) {
+    if (!/\S/.test(name)) {
+        console.log(`Player ${socket.id} declared empty name.`);
+        return callback('EMPTY');
+    }
     const player = await db.getPlayer(socket.id);
     const game = await db.getGame(player.roomId);
     // Check for duplicate name
-    const playerNames = Object.values(game.playerList).map((player) => player.name);
+    const playerNames = Object.values(game.playerList)
+        .filter((player) => player.socketId !== socket.id)
+        .map((player) => player.name);
     if (playerNames.includes(name)) {
         console.log(`Duplicate name not allowed: player ${socket.id} requests ${name}`);
-        callback({ accepted: false, duplicate: true });
+        callback('DUP');
         return;
     }
     // Update name
@@ -91,7 +97,7 @@ async function onDeclareName(socket, name, callback) {
     player.name = name;
     await db.updatePlayer(player);
     // Response
-    callback({ accepted: true, duplicate: false });
+    callback('OK');
     await emitUpdatedGameState(player.roomId);
 }
 async function onGuess(socket, guess) {

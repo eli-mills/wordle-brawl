@@ -9,10 +9,7 @@ export interface ServerToClientEvents {
     [GameEvents.BEGIN_GAME]: () => void;
 }
 export interface ClientToServerEvents {
-    [GameEvents.DECLARE_NAME]: (playerName: string, callback: (result: {
-        accepted: boolean;
-        duplicate: boolean;
-    }) => void) => void;
+    [GameEvents.DECLARE_NAME]: (playerName: string, callback: (result: DeclareNameResponse) => void) => void;
     [GameEvents.GUESS]: (guess: string) => void;
     [GameEvents.REQUEST_NEW_GAME]: () => void;
     [GameEvents.REQUEST_JOIN_GAME]: (room: string, callback: (response: JoinRequestResponse) => void) => void;
@@ -23,4 +20,5 @@ export interface ClientToServerEvents {
     [GameEvents.REQUEST_VALID_WORD]: (callback: (validWord: string) => void) => void;
 }
 export type JoinRequestResponse = "OK" | "DNE" | "MAX";
+export type DeclareNameResponse = "OK" | "DUP" | "EMPTY";
 //# sourceMappingURL=socket-event-type-defs.d.ts.map

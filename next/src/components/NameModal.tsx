@@ -1,44 +1,58 @@
-import { useState, useContext, FormEvent, useEffect } from "react";
-import { GlobalContext } from "@/pages/_app";
-import { GameEvents } from "../../../common";
+import { useState, useContext, FormEvent } from 'react'
+import { GlobalContext } from '@/pages/_app'
+import { GameEvents } from '../../../common'
+import styles from '@/styles/Lobby.module.css'
 
 type NameModalArgs = {
-  setDisplayModal: (_: boolean) => void;
-};
+    setDisplayModal: (_: boolean) => void
+}
 
 export default function NameModal({ setDisplayModal }: NameModalArgs) {
-  const [playerName, setName] = useState("");
-  const [showDuplicateNameMsg, setShowDuplicateNameMsg] = useState(false);
-  const { socket } = useContext(GlobalContext);
+    const [playerName, setName] = useState('')
+    const [showMessage, setShowMessage] = useState(false)
+    const [message, setMessage] = useState('')
+    const { socket } = useContext(GlobalContext)
 
-  const onButtonClick = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    socket?.emit(GameEvents.DECLARE_NAME, playerName, (result) => {
-      if (result.accepted) {
-        setDisplayModal(false);
-      } else {
-          result.duplicate && setShowDuplicateNameMsg(true);
-      }
-    });
-    return false;
-  };
+    const onButtonClick = (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        socket?.emit(GameEvents.DECLARE_NAME, playerName, (result) => {
+            switch (result) {
+                case 'EMPTY':
+                    setMessage('Name cannot be empty.')
+                    setShowMessage(true)
+                    setName("")
+                    setDisplayModal(true)
+                    break
+                case 'DUP':
+                    setMessage('Name already in use.')
+                    setShowMessage(true)
+                    setDisplayModal(true)
+                    break
+                case 'OK':
+                    setMessage('')
+                    setShowMessage(false)
+                    setDisplayModal(false)
+                    break
+            }
+        })
+        return false
+    }
 
-  return (
-    <div className="nameModalBackground">
-      <form className="nameModal" onSubmit={onButtonClick}>
-        <input
-          type="text"
-          onChange={(e) => {
-            setName(e.target.value);
-            setShowDuplicateNameMsg(false);
-          }}
-          onKeyUp={(e) => e.stopPropagation()}
-        />
-        {showDuplicateNameMsg && <p color="red"> Name is already in use </p>}
-        <button className="submitName" type="submit">
-          Submit
-        </button>
-      </form>
-    </div>
-  );
+    return (
+        <form className={styles.nameForm} onSubmit={onButtonClick}>
+            <label>Choose a Name:</label>
+            <input
+                type="text"
+                maxLength={25}
+                value={playerName}
+                onChange={(e) => {
+                    setName(e.target.value)
+                    setShowMessage(false)
+                }}
+                onKeyUp={(e) => e.stopPropagation()}
+            />
+            <button type="submit">Submit</button>
+            {showMessage && <p> {message} </p>}
+        </form>
+    )
 }

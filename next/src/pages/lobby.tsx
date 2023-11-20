@@ -2,8 +2,9 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { GlobalContext } from './_app'
 import { useEffect, useContext, useState } from 'react'
-import { GameEvents, gameCanStart } from '../../../common'
+import { GameEvents, GameParameters, gameCanStart } from '../../../common'
 import NameModal from '@/components/NameModal'
+import styles from '@/styles/Lobby.module.css'
 
 export default function LobbyPage() {
     const { socket, player, game } = useContext(GlobalContext)
@@ -31,6 +32,10 @@ export default function LobbyPage() {
                     }
                 }
         )
+        if (!socket) {
+            alert('Connection lost.')
+            router.push('/')
+        }
         if (!queryRoom) {
             alert('No room number provided.')
             router.push('/')
@@ -52,11 +57,12 @@ export default function LobbyPage() {
             <Head>
                 <title>Wordle WS</title>
             </Head>
-            <main>
                 {socket && (
-                    <div>
+            <main className={styles.main}>
+                    
                         <h1>Room {game?.roomId}</h1>
-                        <ul>
+                        <h2>Players ({game && Object.keys(game.playerList).length} / {GameParameters.MAX_PLAYERS})</h2>
+                        <ul className={styles.nameList}>
                             {game?.playerList &&
                                 Object.values(game.playerList).map(
                                     (currPlayer, index) => (
@@ -67,6 +73,7 @@ export default function LobbyPage() {
                         {displayModal && (
                             <NameModal setDisplayModal={setDisplayModal} />
                         )}
+                        {!displayModal && <button onClick={() => setDisplayModal(true)}>Change Name</button>}
                         {player?.socketId === game?.leader.socketId &&
                             game &&
                             gameCanStart(game) && (
@@ -80,10 +87,10 @@ export default function LobbyPage() {
                                     Start Game
                                 </button>
                             )}
-                    </div>
+                    
+            </main>
                 )}
                 {!socket && <h1>NOT CONNECTED</h1>}
-            </main>
         </>
     )
 }

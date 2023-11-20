@@ -1,0 +1,59 @@
+.main {
+    display: flex;
+    flex-direction: column;
+    justify-content: top;
+    align-items: center;
+    padding: 2rem;
+    height: 100vh;
+    box-sizing: border-box;
+}
+
+.main h1 {
+    font-size: 3rem;
+    margin-top: 0;
+}
+
+.main h2 {
+    margin-bottom: 0;
+    align-self: start;
+}
+
+.main button {
+    font-size: 1.5rem;
+    min-width: 100%;
+}
+
+.nameList {
+    border: 1px solid white;
+    min-height: 15rem;
+    width: 100%;
+    font-size: 1.5rem;
+    padding: 1rem;
+    margin: 0;
+    margin-bottom: 2rem;
+    box-sizing: border-box;
+}
+
+.nameList li {
+    text-align: center;
+    min-width: 100%;
+    margin: .5rem;
+}
+
+.nameForm {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.nameForm * {
+    font-size: 1.5rem;
+}
+
+.nameForm p {
+    color: red;
+    margin: 0;
+    margin-top: 1rem;
+}
