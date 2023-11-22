@@ -12,23 +12,11 @@ import style from '@/styles/Home.module.css'
 
 export default function HomePage() {
     const [room, setRoom] = useState('')
-    const { socket, setSocket } = useContext(GlobalContext)
     const router = useRouter()
-
-    useEffect(() => {
-        const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-            process.env.NEXT_PUBLIC_SOCKET_SERVER_URL ?? ""
-        )
-        setSocket(socket)
-
-        socket.on(GameEvents.NEW_GAME_CREATED, (roomId: string) => {
-            router.push(`/lobby?room=${roomId}`)
-        })
-    }, [router, setSocket])
 
     const requestCreateRoom = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault()
-        socket?.emit(GameEvents.REQUEST_NEW_GAME)
+        router.push(`/lobby?room=${GameEvents.REQUEST_NEW_GAME}`)
     }
 
     const onSubmit = (e: React.FormEvent) => {
