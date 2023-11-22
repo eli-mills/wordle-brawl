@@ -17,7 +17,7 @@ export default function HomePage() {
 
     useEffect(() => {
         const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-            'http://eli.local:3001'
+            process.env.NEXT_PUBLIC_SOCKET_SERVER_URL ?? ""
         )
         setSocket(socket)
 
