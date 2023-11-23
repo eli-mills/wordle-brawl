@@ -1,0 +1,43 @@
+.choosingForm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: top;
+    min-height: 100vh;
+    font-size: 1.2rem;
+    gap: .2rem;
+}
+
+.choosingForm input {
+    font-size: 1.2rem;
+    min-width: 0;
+    width: 5em;
+    margin-right: 1rem;
+}
+
+.choosingForm h1 {
+    font-size: 1.6rem;
+}
+
+.choosingForm p {
+    font-size: 1.2rem;
+}
+
+.choosingForm button {
+    font-size: 1.2rem;
+    max-width: 12rem;
+}
+
+.choosingForm button[disabled] {
+    background-color: grey;
+    font-style: italic;
+    color: darkgrey;
+}
+
+.messageBad {
+    color: red;
+}
+
+.messageGood {
+    color: green;
+}

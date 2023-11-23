@@ -27,9 +27,13 @@
 @media only screen and (max-width: 768px) {
     .keyboard {
         display: grid;
-        grid-template-columns: repeat(20, .9rem);
+        grid-template-columns: repeat(20, .8rem);
         grid-auto-rows: 4rem;
         gap: 5px;
         margin-top: 40px;
+    }
+
+    .keyboard * {
+        font-size: .65rem;
     }
 }
