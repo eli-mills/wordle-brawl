@@ -117,7 +117,7 @@ async function onGuess(socket, guess) {
         await db.addPlayerToSolvedList(player.socketId, player.roomId);
         player.finished = true;
         await db.updatePlayer(player);
-        rewardPointsToPlayer(socket);
+        await rewardPointsToPlayer(socket);
     }
     else {
         await checkPlayerLastGuess(socket);

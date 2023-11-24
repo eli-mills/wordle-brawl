@@ -62,7 +62,7 @@ function mutateIfHits(guess, solution, byPosition, byLetter) {
 function mutateIfHas(guess, solution, byPosition, byLetter) {
     for (let i = 0; i < 5; ++i) {
         if (solution.includes(guess[i])) {
-            byPosition[i] = 'has';
+            byPosition[i] = byPosition[i] !== 'hit' ? 'has' : 'hit';
             byLetter[guess[i]] = byLetter[guess[i]] !== 'hit' ? 'has' : 'hit';
             solution[solution.indexOf(guess[i])] = '';
         }
