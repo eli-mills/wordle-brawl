@@ -33,7 +33,9 @@
         margin-top: 40px;
     }
 
-    .keyboard * {
-        font-size: .65rem;
+    .keyboard button {
+        font-size: .8rem;
+        text-align: center;
+        padding: 0;
     }
 }

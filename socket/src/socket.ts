@@ -133,7 +133,7 @@ async function onDeclareName(
     callback: (result: DeclareNameResponse) => void
 ) {
     if (!/\S/.test(name)) {
-        console.log(`Player ${socket.id} declared empty name.`);
+        console.log(`Player ${socket.id} declared empty name.`)
         return callback('EMPTY')
     }
 
@@ -190,15 +190,17 @@ async function onGuess(socket: Socket, guess: string): Promise<void> {
         await checkPlayerLastGuess(socket)
     }
 
-    // Handle new round
-    if (await allPlayersHaveSolved(player.roomId)) {
-        await resetForNewRound(player.roomId)
-    }
-
     // Send state
     console.log('Sending results')
     socket.emit(GameEvents.EVALUATION, result)
     await emitUpdatedGameState(player.roomId)
+
+    // Handle new round
+    if (await allPlayersHaveSolved(player.roomId)) {
+        await resetForNewRound(player.roomId)
+        await new Promise<void>((resolve) => setTimeout(resolve, 5000))
+        await emitUpdatedGameState(player.roomId)
+    }
 }
 
 async function onBeginGameRequest(

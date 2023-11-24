@@ -122,14 +122,16 @@ async function onGuess(socket, guess) {
     else {
         await checkPlayerLastGuess(socket);
     }
-    // Handle new round
-    if (await allPlayersHaveSolved(player.roomId)) {
-        await resetForNewRound(player.roomId);
-    }
     // Send state
     console.log('Sending results');
     socket.emit(GameEvents.EVALUATION, result);
     await emitUpdatedGameState(player.roomId);
+    // Handle new round
+    if (await allPlayersHaveSolved(player.roomId)) {
+        await resetForNewRound(player.roomId);
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await emitUpdatedGameState(player.roomId);
+    }
 }
 async function onBeginGameRequest(socket) {
     const player = await db.getPlayer(socket.id);

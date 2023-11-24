@@ -7,11 +7,13 @@ html, body {
 button {
     background-color: #222222;
     color: white;
-    border: 1px solid white;
+    border: 1px solid grey;
 }
 
-button:hover {
-    background-color: #888888;
+@media (hover: hover) {
+    button:hover {
+        background-color: #888888;
+    }
 }
 
 input[type="text"] {
