@@ -15,6 +15,7 @@ import {
     FileWordValidator,
     ALLOWED_ANSWERS_PATH,
 } from './evaluation.js'
+import { rewardPointsToChooser, rewardPointsToPlayer } from './reward-points.js'
 
 /************************************************
  *                                              *
@@ -251,6 +252,28 @@ async function onChooseWord(socket: Socket, word: string): Promise<void> {
     await emitUpdatedGameState(player.roomId)
 }
 
+async function onStartOver(socket: Socket): Promise<void> {
+    const player = await db.getPlayer(socket.id)
+    const game = await db.getGame(player.roomId)
+
+    for (const player of Object.values(game.playerList)) {
+        player.score = 0
+        await db.updatePlayer(player)
+    }
+
+    await db.resetChoosersForNewGame(game.roomId)
+    await resetForNewRound(game.roomId)
+    await emitUpdatedGameState(game.roomId)
+}
+
+async function onRequestValidWord(
+    callback: (validWord: string) => void
+): Promise<void> {
+    const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH)
+    const validWord = await validator.getRandomValidWord()
+    callback(validWord)
+}
+
 /************************************************
  *                                              *
  *                    HELPERS                   *
@@ -267,31 +290,6 @@ async function emitUpdatedGameState(roomId: string): Promise<void> {
 async function validateAnswerWord(word: string): Promise<boolean> {
     const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH)
     return await validator.validateWord(word)
-}
-
-/**
- * Adds points to given Player and saves to DB.
- *
- * @param player: Player object to mutate
- */
-async function rewardPointsToPlayer(socket: Socket): Promise<void> {
-    const player = await db.getPlayer(socket.id)
-    if (player.guessResultHistory.length === 0)
-        throw new Error(
-            `Invalid state: player ${player.socketId} is being rewarded points with no guesses for game ${player.roomId}`
-        )
-
-    // Add efficiency points
-    const efficiencyPoints =
-        GameParameters.EFFICIENCY_POINTS[player.guessResultHistory.length]
-    player.score += efficiencyPoints
-
-    // Add speed bonus
-    const firstSolver = await db.getFirstSolver(player.roomId)
-    if (firstSolver.socketId === player.socketId) {
-        player.score += GameParameters.SPEED_BONUS
-    }
-    await db.updatePlayer(player)
 }
 
 async function allPlayersHaveSolved(roomId: string): Promise<boolean> {
@@ -324,28 +322,6 @@ async function resetForNewRound(roomId: string): Promise<void> {
     await db.updateGame(game)
 }
 
-async function rewardPointsToChooser(socket: Socket): Promise<void> {
-    const player = await db.getPlayer(socket.id)
-    const game = await db.getGame(player?.roomId ?? '')
-
-    if (!game.chooser)
-        throw new Error(
-            `Invalid state: rewarding points to chooser for game ${game.roomId} which has no chooser`
-        )
-    if (player.socketId === game.chooser.socketId)
-        throw new Error(
-            `Invalid state: player ${socket.id} is a guesser and chooser in game ${game.roomId}`
-        )
-
-    if (player.guessResultHistory.length <= 1) return // No points for chooser if player guessed on first try
-
-    const maxGuesses = 5 * (Object.keys(game.playerList).length - 1)
-    const pointsPerGuess = GameParameters.MAX_CHOOSER_POINTS / maxGuesses
-    game.chooser.score += pointsPerGuess
-
-    await db.updatePlayer(game.chooser)
-}
-
 async function checkPlayerLastGuess(socket: Socket): Promise<void> {
     const player = await db.getPlayer(socket.id)
     if (player.guessResultHistory.length >= GameParameters.MAX_NUM_GUESSES) {
@@ -353,24 +329,4 @@ async function checkPlayerLastGuess(socket: Socket): Promise<void> {
         player.finished = true
         await db.updatePlayer(player)
     }
-}
-async function onStartOver(socket: Socket): Promise<void> {
-    const player = await db.getPlayer(socket.id)
-    const game = await db.getGame(player.roomId)
-
-    for (const player of Object.values(game.playerList)) {
-        player.score = 0
-        await db.updatePlayer(player)
-    }
-
-    await db.resetChoosersForNewGame(game.roomId)
-    await resetForNewRound(game.roomId)
-    await emitUpdatedGameState(game.roomId)
-}
-async function onRequestValidWord(
-    callback: (validWord: string) => void
-): Promise<void> {
-    const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH)
-    const validWord = await validator.getRandomValidWord()
-    callback(validWord)
 }

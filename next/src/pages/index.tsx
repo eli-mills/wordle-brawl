@@ -36,6 +36,8 @@ export default function HomePage() {
                         <input
                             onChange={(e) => setRoom(e.target.value)}
                             type="text"
+                            inputMode='numeric'
+                            pattern='[0-9]*'
                             maxLength={4}
                         />
                         <button type="submit">Join a Room</button>
