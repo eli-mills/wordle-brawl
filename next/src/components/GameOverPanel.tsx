@@ -1,24 +1,42 @@
-import { useContext } from "react";
-import { GlobalContext } from "@/pages/_app";
-import { GameEvents } from "../../../common";
-import PlayerStatsCard from "./PlayerStatsCard";
+import { useContext } from 'react'
+import { useRouter } from 'next/router'
+import { GlobalContext } from '@/pages/_app'
+import { GameEvents, gameCanStart } from '../../../common'
+import PlayerStatsCard from './PlayerStatsCard'
 
 export default function GameOverPanel() {
-  const { player, game, socket } = useContext(GlobalContext);
+    const router = useRouter()
+    const { player, game, socket, setSocket, setGame, setPlayer } =
+        useContext(GlobalContext)
 
-  const onClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      socket?.emit(GameEvents.START_OVER)
-  };
+    const onClickPlayAgain = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault()
+        socket?.emit(GameEvents.START_OVER)
+    }
 
-  return (
-    <div>
-      <h1>Game Over</h1>
-      {game &&
-        Object.values(game.playerList).map((player) =>
-          PlayerStatsCard({ player })
-        )}
-          {player && game && player.socketId === game.leader.socketId && <button onClick={onClick}>Play Again?</button>}
-    </div>
-  );
+    const onClickHome = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault()
+        socket?.disconnect()
+        setSocket(null)
+        setGame(null)
+        setPlayer(null)
+        router.push('/')
+    }
+
+    return (
+        <div>
+            <h1>Game Over</h1>
+            {game &&
+                Object.values(game.playerList).map((player) =>
+                    PlayerStatsCard({ player })
+                )}
+            {player &&
+                game &&
+                player.socketId === game.leader.socketId &&
+                gameCanStart(game) && (
+                    <button onClick={onClickPlayAgain}>Play Again?</button>
+                )}
+            <button onClick={onClickHome}>Return Home</button>
+        </div>
+    )
 }

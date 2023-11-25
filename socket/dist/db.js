@@ -1,4 +1,5 @@
 import { createClient } from 'redis';
+import { GameParameters } from '../../common/dist/index.js';
 /************************************************
  *                                              *
  *                 CONFIGURATION                *
@@ -480,15 +481,36 @@ async function deleteGameIfListEmpty(roomId) {
 }
 async function replaceLeaderIfRemoved(removedSocketId, roomId) {
     const game = await getGame(roomId);
-    if (removedSocketId !== game.leader.socketId)
-        return;
-    // Leader deleted, replace leader
-    console.log(`Player ${game.leader.socketId} was the leader, need replacement.`);
-    const playerList = await getPlayerList(roomId);
-    if (Object.keys(playerList).length === 0) {
-        throw new Error(`Invalid state: replaceLeader called on game ${roomId} with empty playerList`);
+    if (removedSocketId === game.leader.socketId) {
+        // Leader deleted, replace leader
+        console.log(`Player ${game.leader.socketId} was the leader, need replacement.`);
+        const playerList = await getPlayerList(roomId);
+        if (Object.keys(playerList).length === 0) {
+            throw new Error(`Invalid state: replaceLeader called on game ${roomId} with empty playerList`);
+        }
+        game.leader = playerList[Object.keys(playerList)[0]];
     }
-    game.leader = playerList[Object.keys(playerList)[0]];
+    // Check if chooser was removed
+    if (removedSocketId === game.chooser?.socketId) {
+        console.log(`Player ${game.chooser.socketId} was the chooser, need replacement.`);
+        if (Object.keys(game.playerList).length < GameParameters.MIN_PLAYERS) {
+            game.status = 'end';
+            game.chooser = null;
+        }
+        else if (game.status === 'playing') {
+            game.chooser = null;
+        }
+        else if (game.status === 'choosing') {
+            const nextChooser = await getRandomChooserFromList(roomId);
+            if (!nextChooser) {
+                console.log(`No choosers left for game ${roomId}`);
+                game.status = 'end';
+            }
+            else {
+                game.chooser = nextChooser;
+            }
+        }
+    }
     await updateGame(game);
 }
 export async function resetChoosersForNewGame(roomId) {
