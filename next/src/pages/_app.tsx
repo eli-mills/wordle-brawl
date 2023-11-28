@@ -9,6 +9,7 @@ import {
     ServerToClientEvents,
     ClientToServerEvents,
 } from '../../../common'
+import NavBar from '@/components/NavBar'
 
 interface GlobalContext {
     socket: Socket<ServerToClientEvents, ClientToServerEvents> | null
@@ -60,6 +61,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
     return (
         <GlobalContext.Provider value={{ ...globalState }}>
+            <NavBar />
             <Component {...pageProps} />
         </GlobalContext.Provider>
     )

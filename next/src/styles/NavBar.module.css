@@ -1,0 +1,22 @@
+.navBar, .navBar * {
+    padding: .5rem 0;
+    margin: 0;
+}
+
+.navBar {
+    background-color: white;
+    color: black;
+    border: 1px solid black;
+}
+
+.navBar ul {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    text-decoration: underline;
+}
+
+.navBar a {
+    text-decoration: inherit;
+    color: inherit;
+}

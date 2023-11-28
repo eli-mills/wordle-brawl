@@ -16,10 +16,6 @@ export default function GameOverPanel() {
 
     const onClickHome = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault()
-        socket?.disconnect()
-        setSocket(null)
-        setGame(null)
-        setPlayer(null)
         router.push('/')
     }
 

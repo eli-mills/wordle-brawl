@@ -2,17 +2,13 @@ import Head from 'next/head'
 import { useState, useContext, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { GlobalContext } from './_app'
-import { io, Socket } from 'socket.io-client'
-import {
-    GameEvents,
-    ServerToClientEvents,
-    ClientToServerEvents,
-} from '../../../common'
+import { GameEvents } from '../../../common'
 import style from '@/styles/Home.module.css'
 
 export default function HomePage() {
     const [room, setRoom] = useState('')
     const router = useRouter()
+    const { socket, setSocket, setGame, setPlayer } = useContext(GlobalContext)
 
     const requestCreateRoom = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault()
@@ -23,6 +19,13 @@ export default function HomePage() {
         e.preventDefault()
         router.push(`/lobby?room=${room}`)
     }
+
+    useEffect(() => {
+        socket?.disconnect();
+        setSocket(null);
+        setGame(null);
+        setPlayer(null);
+    }, [setGame, setPlayer, setSocket, socket])
 
     return (
         <>
@@ -36,8 +39,8 @@ export default function HomePage() {
                         <input
                             onChange={(e) => setRoom(e.target.value)}
                             type="text"
-                            inputMode='numeric'
-                            pattern='[0-9]*'
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             maxLength={4}
                         />
                         <button type="submit">Join a Room</button>
