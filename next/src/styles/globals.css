@@ -1,7 +1,9 @@
-html, body {
+html,
+body {
     background-color: black;
     color: white;
-    font-family:'Times New Roman', Times, serif !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    margin: 0;
 }
 
 button {

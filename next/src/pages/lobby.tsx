@@ -35,7 +35,7 @@ function handleRoomQuery(
     socket: Socket<ServerToClientEvents, ClientToServerEvents>,
     router: NextRouter
 ): void {
-    console.log(`handleRoomQuery: room = ${room}`);
+    console.log(`handleRoomQuery: room = ${room}`)
     switch (room) {
         case GameEvents.REQUEST_NEW_GAME:
             socket?.emit(GameEvents.REQUEST_NEW_GAME)
@@ -51,11 +51,8 @@ function handleRoomQuery(
                 router.push('/')
                 break
             }
-            socket?.emit(
-                GameEvents.REQUEST_JOIN_GAME,
-                room,
-                (response) =>
-                    handleJoinGameResponse(response, router)
+            socket?.emit(GameEvents.REQUEST_JOIN_GAME, room, (response) =>
+                handleJoinGameResponse(response, router)
             )
     }
 }
@@ -68,15 +65,16 @@ export default function LobbyPage() {
 
     useEffect(() => {
         if (!socket) {
-            console.log("No socket, creating new connection to server");
-            const newSocket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-                process.env.NEXT_PUBLIC_SOCKET_SERVER_URL ?? ""
-            )
+            console.log('No socket, creating new connection to server')
+            const newSocket: Socket<
+                ServerToClientEvents,
+                ClientToServerEvents
+            > = io(process.env.NEXT_PUBLIC_SOCKET_SERVER_URL ?? '')
             newSocket.on(GameEvents.NEW_GAME_CREATED, (roomId: string) => {
                 router.push(`/lobby?room=${roomId}`)
             })
             setSocket(newSocket)
-            return;
+            return
         }
         console.log(`Socket exists, handling room query for room ${room}`)
         router.isReady && handleRoomQuery(room, socket, router)
@@ -100,18 +98,21 @@ export default function LobbyPage() {
             {socket && (
                 <main className={styles.main}>
                     <h1>Room {game?.roomId}</h1>
-                    <h2>
-                        Players ({game && Object.keys(game.playerList).length} /{' '}
-                        {GameParameters.MAX_PLAYERS})
-                    </h2>
-                    <ul className={styles.nameList}>
-                        {game?.playerList &&
-                            Object.values(game.playerList).map(
-                                (currPlayer, index) => (
-                                    <li key={index}>{currPlayer.name}</li>
-                                )
-                            )}
-                    </ul>
+                    <div>
+                        <h2>
+                            Players (
+                            {game && Object.keys(game.playerList).length} /{' '}
+                            {GameParameters.MAX_PLAYERS})
+                        </h2>
+                        <ul className={styles.nameList}>
+                            {game?.playerList &&
+                                Object.values(game.playerList).map(
+                                    (currPlayer, index) => (
+                                        <li key={index}>{currPlayer.name}</li>
+                                    )
+                                )}
+                        </ul>
+                    </div>
                     {displayModal && (
                         <NameModal setDisplayModal={setDisplayModal} />
                     )}
