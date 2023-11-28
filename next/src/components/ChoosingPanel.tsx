@@ -47,7 +47,8 @@ export default function ChoosingPanel() {
             autoComplete="off"
             className={styles.choosingForm}
         >
-            <h1> Pick a word for others to guess: </h1>
+            <h1> You&apos;re the chooser! </h1>
+            <h2>Pick a word for others to guess:</h2>
             <div>
                 <input
                     id="chosenWord"

@@ -4,28 +4,41 @@
     align-items: center;
     justify-content: top;
     min-height: 100vh;
+    padding: 3rem 1rem;
+    gap: 1rem;
+}
+
+.choosingForm * {
     font-size: 1.2rem;
-    gap: .2rem;
+    margin: 0;
+}
+
+.choosingForm div {
+    min-width: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
 }
 
 .choosingForm input {
-    font-size: 1.2rem;
     min-width: 0;
     width: 5em;
     margin-right: 1rem;
 }
 
 .choosingForm h1 {
-    font-size: 1.6rem;
-}
-
-.choosingForm p {
-    font-size: 1.2rem;
+    font-size: 2rem;
+    margin: 0 0 2rem 0;
 }
 
 .choosingForm button {
-    font-size: 1.2rem;
-    max-width: 12rem;
+    max-width: 80%;
+    padding: .2rem 1rem;
+}
+
+.choosingForm p {
+    margin-bottom: 2rem;
 }
 
 .choosingForm button[disabled] {
@@ -40,4 +53,17 @@
 
 .messageGood {
     color: green;
+}
+
+@media (min-width: 1200px) {
+    .choosingForm { 
+        padding-top: 5rem;
+    }
+
+    .choosingForm * {
+        font-size: 1.5rem;
+    }
+    .choosingForm h1 {
+        font-size: 2.5rem;
+    }
 }

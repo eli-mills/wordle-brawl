@@ -2,8 +2,11 @@ html,
 body {
     background-color: black;
     color: white;
-    font-family: 'Times New Roman', Times, serif !important;
     margin: 0;
+}
+
+html * {
+    font-family: 'Times New Roman', Times, serif !important;
 }
 
 button {

@@ -73,17 +73,19 @@
         padding: 0;
     }
 
+    .main * {
+        max-width: 30%;
+    }
+
     .main h1 {
         font-size: 4rem;
     }
 
     .main h2 {
         font-size: 2rem;
+        max-width: 100%;
     }
 
-    .main * {
-        max-width: 30%;
-    }
 
     .main button {
         min-width: 0;
