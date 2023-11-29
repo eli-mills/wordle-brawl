@@ -21,7 +21,7 @@ export const io = new Server(httpServer, {
 io.on('connection', async (newSocket) => {
     console.log(`User ${newSocket.id} connected.`);
     await db.createPlayer(newSocket.id);
-    newSocket.on(GameEvents.REQUEST_NEW_GAME, () => onCreateGameRequest(newSocket));
+    newSocket.on(GameEvents.REQUEST_NEW_GAME, (callback) => onCreateGameRequest(newSocket, callback));
     newSocket.on(GameEvents.REQUEST_JOIN_GAME, (roomId, callback) => onJoinGameRequest(newSocket, roomId, callback));
     newSocket.on(GameEvents.DECLARE_NAME, (name, callback) => onDeclareName(newSocket, name, callback));
     newSocket.on(GameEvents.GUESS, (guess) => onGuess(newSocket, guess));
@@ -45,14 +45,14 @@ async function onDisconnect(socket) {
     await db.deletePlayer(socket.id);
     await emitUpdatedGameState(player.roomId);
 }
-async function onCreateGameRequest(socket) {
+async function onCreateGameRequest(socket, callback) {
     console.log(`Player ${socket.id} requests new game`);
     const newRoomId = await db.createGame(socket.id);
     if (!newRoomId) {
-        socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
+        callback({ roomsAvailable: false, roomId: "" });
         return;
     }
-    socket.emit(GameEvents.NEW_GAME_CREATED, newRoomId);
+    callback({ roomsAvailable: true, roomId: newRoomId });
     await emitUpdatedGameState(newRoomId);
 }
 async function onJoinGameRequest(socket, roomId, callback) {

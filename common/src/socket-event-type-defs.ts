@@ -16,7 +16,7 @@ export interface ClientToServerEvents {
     callback: (result: DeclareNameResponse) => void
   ) => void;
   [GameEvents.GUESS]: (guess: string) => void;
-  [GameEvents.REQUEST_NEW_GAME]: () => void;
+  [GameEvents.REQUEST_NEW_GAME]: (callback: (response: NewGameRequestResponse) => void) => void;
   [GameEvents.REQUEST_JOIN_GAME]: (
     room: string,
     callback: (response: JoinRequestResponse) => void
@@ -35,3 +35,4 @@ export interface ClientToServerEvents {
 
 export type JoinRequestResponse = "OK" | "DNE" | "MAX";
 export type DeclareNameResponse = "OK" | "DUP" | "EMPTY";
+export type NewGameRequestResponse = {roomsAvailable: boolean, roomId: string}

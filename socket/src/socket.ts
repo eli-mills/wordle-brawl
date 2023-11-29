@@ -8,6 +8,7 @@ import {
     GameParameters,
     JoinRequestResponse,
     DeclareNameResponse,
+    NewGameRequestResponse,
     gameCanStart,
 } from '../../common/dist/index.js'
 import {
@@ -39,8 +40,8 @@ export const io = new Server<ClientToServerEvents, ServerToClientEvents>(
 io.on('connection', async (newSocket) => {
     console.log(`User ${newSocket.id} connected.`)
     await db.createPlayer(newSocket.id)
-    newSocket.on(GameEvents.REQUEST_NEW_GAME, () =>
-        onCreateGameRequest(newSocket)
+    newSocket.on(GameEvents.REQUEST_NEW_GAME, (callback: (response: NewGameRequestResponse) => void) =>
+        onCreateGameRequest(newSocket, callback)
     )
     newSocket.on(
         GameEvents.REQUEST_JOIN_GAME,
@@ -82,16 +83,16 @@ async function onDisconnect(socket: Socket): Promise<void> {
     await emitUpdatedGameState(player.roomId)
 }
 
-async function onCreateGameRequest(socket: Socket): Promise<void> {
+async function onCreateGameRequest(socket: Socket, callback: (response: NewGameRequestResponse) => void): Promise<void> {
     console.log(`Player ${socket.id} requests new game`)
 
     const newRoomId = await db.createGame(socket.id)
     if (!newRoomId) {
-        socket.emit(GameEvents.NO_ROOMS_AVAILABLE)
+        callback({roomsAvailable: false, roomId: ""})
         return
     }
 
-    socket.emit(GameEvents.NEW_GAME_CREATED, newRoomId)
+    callback({roomsAvailable: true, roomId: newRoomId});
     await emitUpdatedGameState(newRoomId)
 }
 

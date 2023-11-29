@@ -11,7 +11,7 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
     [GameEvents.DECLARE_NAME]: (playerName: string, callback: (result: DeclareNameResponse) => void) => void;
     [GameEvents.GUESS]: (guess: string) => void;
-    [GameEvents.REQUEST_NEW_GAME]: () => void;
+    [GameEvents.REQUEST_NEW_GAME]: (callback: (response: NewGameRequestResponse) => void) => void;
     [GameEvents.REQUEST_JOIN_GAME]: (room: string, callback: (response: JoinRequestResponse) => void) => void;
     [GameEvents.REQUEST_BEGIN_GAME]: () => void;
     [GameEvents.CHECK_CHOSEN_WORD_VALID]: (word: string, callback: (isValid: boolean) => void) => void;
@@ -21,4 +21,8 @@ export interface ClientToServerEvents {
 }
 export type JoinRequestResponse = "OK" | "DNE" | "MAX";
 export type DeclareNameResponse = "OK" | "DUP" | "EMPTY";
+export type NewGameRequestResponse = {
+    roomsAvailable: boolean;
+    roomId: string;
+};
 //# sourceMappingURL=socket-event-type-defs.d.ts.map

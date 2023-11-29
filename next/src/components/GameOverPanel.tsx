@@ -6,8 +6,7 @@ import PlayerStatsCard from './PlayerStatsCard'
 
 export default function GameOverPanel() {
     const router = useRouter()
-    const { player, game, socket, setSocket, setGame, setPlayer } =
-        useContext(GlobalContext)
+    const { player, game, socket } = useContext(GlobalContext)
 
     const onClickPlayAgain = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault()

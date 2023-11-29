@@ -8,6 +8,7 @@ import {
     GameParameters,
     gameCanStart,
     JoinRequestResponse,
+    NewGameRequestResponse,
     ClientToServerEvents,
     ServerToClientEvents,
 } from '../../../common'
@@ -30,6 +31,20 @@ function handleJoinGameResponse(
     }
 }
 
+function handleNewGameResponse(
+    response: NewGameRequestResponse,
+    router: NextRouter
+) {
+    switch (response.roomsAvailable) {
+        case false:
+            alert('No rooms available. Please try again in a few minutes.')
+            router.push('/')
+            break
+        case true:
+            router.push(`/lobby?room=${response.roomId}`)
+    }
+}
+
 function handleRoomQuery(
     room: string | string[] | undefined,
     socket: Socket<ServerToClientEvents, ClientToServerEvents>,
@@ -38,7 +53,13 @@ function handleRoomQuery(
     console.log(`handleRoomQuery: room = ${room}`)
     switch (room) {
         case GameEvents.REQUEST_NEW_GAME:
-            socket?.emit(GameEvents.REQUEST_NEW_GAME)
+            console.log('New game request received, emitting to socket...')
+            socket.emit(
+                GameEvents.REQUEST_NEW_GAME,
+                (response: NewGameRequestResponse) => {
+                    handleNewGameResponse(response, router)
+                }
+            )
             break
         case '':
         case undefined:
@@ -51,7 +72,7 @@ function handleRoomQuery(
                 router.push('/')
                 break
             }
-            socket?.emit(GameEvents.REQUEST_JOIN_GAME, room, (response) =>
+            socket.emit(GameEvents.REQUEST_JOIN_GAME, room, (response) =>
                 handleJoinGameResponse(response, router)
             )
     }
@@ -64,6 +85,7 @@ export default function LobbyPage() {
     const [displayModal, setDisplayModal] = useState(true)
 
     useEffect(() => {
+        console.log('Inside useEffect for handling query.')
         if (!socket) {
             console.log('No socket, creating new connection to server')
             const newSocket: Socket<
@@ -76,9 +98,17 @@ export default function LobbyPage() {
             setSocket(newSocket)
             return
         }
-        console.log(`Socket exists, handling room query for room ${room}`)
-        router.isReady && handleRoomQuery(room, socket, router)
-    }, [room, router, setSocket, socket])
+        console.log(`Socket exists`)
+
+        if (!router.isReady) {
+            console.log('Router is not ready, exiting.')
+            return
+        }
+        console.log(
+            `Router is ready and socket exists. Handling query for room ${room}.`
+        )
+        handleRoomQuery(room, socket, router)
+    }, [room, router, router.isReady, setSocket, socket])
 
     useEffect(() => {
         socket?.on(GameEvents.BEGIN_GAME, () => {
