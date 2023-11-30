@@ -64,6 +64,7 @@ io.on('connection', async (newSocket) => {
     )
     newSocket.on(GameEvents.START_OVER, () => onStartOver(newSocket))
     newSocket.on(GameEvents.REQUEST_VALID_WORD, onRequestValidWord)
+    newSocket.on(GameEvents.SAY_HELLO, onSayHello)
 })
 
 /************************************************
@@ -71,6 +72,10 @@ io.on('connection', async (newSocket) => {
  *                EVENT LISTENERS               *
  *                                              *
  ************************************************/
+function onSayHello(callback: ()=>void) {
+    console.log("say-hello event received")
+    callback()
+}
 
 async function onDisconnect(socket: Socket): Promise<void> {
     // Get player room

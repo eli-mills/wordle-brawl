@@ -31,6 +31,7 @@ export interface ClientToServerEvents {
   [GameEvents.REQUEST_VALID_WORD]: (
     callback: (validWord: string) => void
   ) => void;
+    [GameEvents.SAY_HELLO]: (callback: () => void ) => void
 }
 
 export type JoinRequestResponse = "OK" | "DNE" | "MAX";

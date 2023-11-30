@@ -18,6 +18,7 @@ export interface ClientToServerEvents {
     [GameEvents.CHOOSE_WORD]: (word: string) => void;
     [GameEvents.START_OVER]: () => void;
     [GameEvents.REQUEST_VALID_WORD]: (callback: (validWord: string) => void) => void;
+    [GameEvents.SAY_HELLO]: (callback: () => void) => void;
 }
 export type JoinRequestResponse = "OK" | "DNE" | "MAX";
 export type DeclareNameResponse = "OK" | "DUP" | "EMPTY";

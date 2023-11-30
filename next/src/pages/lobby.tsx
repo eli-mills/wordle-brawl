@@ -14,6 +14,7 @@ import {
 } from '../../../common'
 import NameModal from '@/components/NameModal'
 import styles from '@/styles/Lobby.module.css'
+import LoadingIcon from '@/components/LoadingIcon'
 
 function handleJoinGameResponse(
     response: JoinRequestResponse,
@@ -35,6 +36,7 @@ function handleNewGameResponse(
     response: NewGameRequestResponse,
     router: NextRouter
 ) {
+    process.env.NEXT_PUBLIC_DEBUG && console.log(`Inside handleNewGameResponse. response=${JSON.stringify(response)}`)
     switch (response.roomsAvailable) {
         case false:
             alert('No rooms available. Please try again in a few minutes.')
@@ -50,16 +52,29 @@ function handleRoomQuery(
     socket: Socket<ServerToClientEvents, ClientToServerEvents>,
     router: NextRouter
 ): void {
-    console.log(`handleRoomQuery: room = ${room}`)
+    console.log(
+        `handleRoomQuery: room = ${room}, socket = ${socket.id}, router = ${router}`
+    )
     switch (room) {
         case GameEvents.REQUEST_NEW_GAME:
             console.log('New game request received, emitting to socket...')
-            socket.emit(
+            // socket.emit(GameEvents.SAY_HELLO, () =>
+            //     console.log('Inside say-hello callback')
+            // )
+            socket.timeout(3000).emit(
                 GameEvents.REQUEST_NEW_GAME,
-                (response: NewGameRequestResponse) => {
-                    handleNewGameResponse(response, router)
+                (err: Error, response: NewGameRequestResponse) => {
+                    if (err) {
+                        console.log("Timeout, emitting again")
+                        socket.emit(GameEvents.REQUEST_NEW_GAME, (response) => {
+                            handleNewGameResponse(response, router)
+                        })
+                    } else {
+                        handleNewGameResponse(response, router)
+                    }
                 }
             )
+
             break
         case '':
         case undefined:
@@ -83,49 +98,57 @@ export default function LobbyPage() {
     const router = useRouter()
     const { room } = router.query
     const [displayModal, setDisplayModal] = useState(true)
+    const [isConnected, setIsConnected] = useState(false)
 
     useEffect(() => {
-        console.log('Inside useEffect for handling query.')
-        if (!socket) {
-            console.log('No socket, creating new connection to server')
-            const newSocket: Socket<
-                ServerToClientEvents,
-                ClientToServerEvents
-            > = io(process.env.NEXT_PUBLIC_SOCKET_SERVER_URL ?? '')
-            newSocket.on(GameEvents.NEW_GAME_CREATED, (roomId: string) => {
-                router.push(`/lobby?room=${roomId}`)
-            })
-            setSocket(newSocket)
-            return
-        }
-        console.log(`Socket exists`)
+        console.log(
+            `socket.connected changed. current value: ${socket?.connected}`
+        )
+    }, [socket?.connected])
 
+    useEffect(() => {
+        console.log('No socket, creating new connection to server')
+        const newSocket: Socket<ServerToClientEvents, ClientToServerEvents> =
+            io(process.env.NEXT_PUBLIC_SOCKET_SERVER_URL ?? '')
+        newSocket.on('connect', () => {
+            console.log('socket is connected')
+            setIsConnected(true)
+        })
+
+        setSocket(newSocket)
+        return () => {
+            newSocket.disconnect()
+        }
+    }, [])
+
+    useEffect(() => {
+        if (!socket)
+            return console.log(`No socket, exiting query handler effect`)
+        if (!socket.connected) {
+            return console.log('Socket not connected, exiting effect')
+        }
         if (!router.isReady) {
-            console.log('Router is not ready, exiting.')
-            return
+            return console.log('Router is not ready, exiting.')
         }
         console.log(
             `Router is ready and socket exists. Handling query for room ${room}.`
         )
-        handleRoomQuery(room, socket, router)
-    }, [room, router, router.isReady, setSocket, socket])
-
-    useEffect(() => {
-        socket?.on(GameEvents.BEGIN_GAME, () => {
+        socket.on(GameEvents.BEGIN_GAME, () => {
             router.push('/game')
         })
+        handleRoomQuery(room, socket, router)
 
         return () => {
-            socket?.off(GameEvents.BEGIN_GAME)
+            socket.off(GameEvents.BEGIN_GAME)
         }
-    }, [router, socket])
+    }, [room, router, router.isReady, socket, isConnected])
 
     return (
         <>
             <Head>
                 <title>Wordle WS</title>
             </Head>
-            {socket && (
+            {game && (
                 <main className={styles.main}>
                     <h1>Room {game?.roomId}</h1>
                     <div>
@@ -164,7 +187,7 @@ export default function LobbyPage() {
                         )}
                 </main>
             )}
-            {!socket && <h1>NOT CONNECTED</h1>}
+            {!game && <LoadingIcon />}
         </>
     )
 }

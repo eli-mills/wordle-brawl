@@ -31,12 +31,17 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.CHOOSE_WORD, (word) => onChooseWord(newSocket, word));
     newSocket.on(GameEvents.START_OVER, () => onStartOver(newSocket));
     newSocket.on(GameEvents.REQUEST_VALID_WORD, onRequestValidWord);
+    newSocket.on(GameEvents.SAY_HELLO, onSayHello);
 });
 /************************************************
  *                                              *
  *                EVENT LISTENERS               *
  *                                              *
  ************************************************/
+function onSayHello(callback) {
+    console.log("say-hello event received");
+    callback();
+}
 async function onDisconnect(socket) {
     // Get player room
     const player = await db.getPlayer(socket.id);
