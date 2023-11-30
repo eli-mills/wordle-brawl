@@ -5,16 +5,16 @@ import { useEffect, useContext, useState } from 'react'
 import { Socket, io } from 'socket.io-client'
 import {
     GameEvents,
-    GameParameters,
-    gameCanStart,
     JoinRequestResponse,
     NewGameRequestResponse,
     ClientToServerEvents,
     ServerToClientEvents,
 } from '../../../common'
-import NameModal from '@/components/NameModal'
+import NameForm from '@/components/NameForm'
 import styles from '@/styles/Lobby.module.css'
 import LoadingIcon from '@/components/LoadingIcon'
+import PlayerListPanel from '@/components/PlayerListPanel'
+import GameStartButton from '@/components/GameStartButton'
 
 function handleJoinGameResponse(
     response: JoinRequestResponse,
@@ -36,7 +36,10 @@ function handleNewGameResponse(
     response: NewGameRequestResponse,
     router: NextRouter
 ) {
-    process.env.NEXT_PUBLIC_DEBUG && console.log(`Inside handleNewGameResponse. response=${JSON.stringify(response)}`)
+    process.env.NEXT_PUBLIC_DEBUG &&
+        console.log(
+            `Inside handleNewGameResponse. response=${JSON.stringify(response)}`
+        )
     switch (response.roomsAvailable) {
         case false:
             alert('No rooms available. Please try again in a few minutes.')
@@ -61,19 +64,24 @@ function handleRoomQuery(
             // socket.emit(GameEvents.SAY_HELLO, () =>
             //     console.log('Inside say-hello callback')
             // )
-            socket.timeout(3000).emit(
-                GameEvents.REQUEST_NEW_GAME,
-                (err: Error, response: NewGameRequestResponse) => {
-                    if (err) {
-                        console.log("Timeout, emitting again")
-                        socket.emit(GameEvents.REQUEST_NEW_GAME, (response) => {
+            socket
+                .timeout(3000)
+                .emit(
+                    GameEvents.REQUEST_NEW_GAME,
+                    (err: Error, response: NewGameRequestResponse) => {
+                        if (err) {
+                            console.log('Timeout, emitting again')
+                            socket.emit(
+                                GameEvents.REQUEST_NEW_GAME,
+                                (response) => {
+                                    handleNewGameResponse(response, router)
+                                }
+                            )
+                        } else {
                             handleNewGameResponse(response, router)
-                        })
-                    } else {
-                        handleNewGameResponse(response, router)
+                        }
                     }
-                }
-            )
+                )
 
             break
         case '':
@@ -97,7 +105,7 @@ export default function LobbyPage() {
     const { socket, setSocket, player, game } = useContext(GlobalContext)
     const router = useRouter()
     const { room } = router.query
-    const [displayModal, setDisplayModal] = useState(true)
+    const [displayNameForm, setDisplayNameForm] = useState(true)
     const [isConnected, setIsConnected] = useState(false)
 
     useEffect(() => {
@@ -148,46 +156,21 @@ export default function LobbyPage() {
             <Head>
                 <title>Wordle WS</title>
             </Head>
-            {game && (
+            {game ? (
                 <main className={styles.main}>
                     <h1>Room {game?.roomId}</h1>
-                    <div>
-                        <h2>
-                            Players (
-                            {game && Object.keys(game.playerList).length} /{' '}
-                            {GameParameters.MAX_PLAYERS})
-                        </h2>
-                        <ul className={styles.nameList}>
-                            {game?.playerList &&
-                                Object.values(game.playerList).map(
-                                    (currPlayer, index) => (
-                                        <li key={index}>{currPlayer.name}</li>
-                                    )
-                                )}
-                        </ul>
-                    </div>
-                    {displayModal && (
-                        <NameModal setDisplayModal={setDisplayModal} />
-                    )}
-                    {!displayModal && (
-                        <button onClick={() => setDisplayModal(true)}>
-                            Change Name
-                        </button>
-                    )}
-                    {player?.socketId === game?.leader.socketId &&
-                        game &&
-                        gameCanStart(game) && (
-                            <button
-                                onClick={() =>
-                                    socket?.emit(GameEvents.REQUEST_BEGIN_GAME)
-                                }
-                            >
-                                Start Game
-                            </button>
-                        )}
+                    <PlayerListPanel />
+                    <NameForm
+                        {...{
+                            displayNameForm,
+                            setDisplayNameForm,
+                        }}
+                    />
+                    <GameStartButton />
                 </main>
+            ) : (
+                <LoadingIcon />
             )}
-            {!game && <LoadingIcon />}
         </>
     )
 }

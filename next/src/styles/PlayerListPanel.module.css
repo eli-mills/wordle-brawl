@@ -1,0 +1,16 @@
+.playerList {
+    border: 1px solid white;
+    min-height: 15rem;
+    min-width: 100%;
+    font-size: 1.5rem;
+    padding: 1rem;
+    margin: 0;
+    margin-bottom: 2rem;
+    box-sizing: border-box;
+}
+
+.playerList li {
+    text-align: center;
+    min-width: 100%;
+    margin: .5rem;
+}

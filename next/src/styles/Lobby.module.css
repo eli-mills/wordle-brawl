@@ -32,43 +32,8 @@
     margin: 1rem 0;
 }
 
-.nameList {
-    border: 1px solid white;
-    min-height: 15rem;
-    min-width: 100%;
-    font-size: 1.5rem;
-    padding: 1rem;
-    margin: 0;
-    margin-bottom: 2rem;
-    box-sizing: border-box;
-}
-
-.nameList li {
-    text-align: center;
-    min-width: 100%;
-    margin: .5rem;
-}
-
-.nameForm {
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    width: 100%;
-}
-
-.nameForm * {
-    font-size: 1.5rem;
-}
-
-.nameForm p {
-    color: red;
-    margin: 0;
-    margin-top: 1rem;
-}
-
 @media (min-width: 1200px) {
-    .main { 
+    .main {
         justify-content: space-around;
         padding: 0;
     }
@@ -86,19 +51,8 @@
         max-width: 100%;
     }
 
-
     .main button {
         min-width: 0;
-        padding: .2rem 1rem;
+        padding: 0.2rem 1rem;
     }
-
-    .nameForm {
-        align-items: center;
-    }
-
-    .nameForm label {
-        text-align: left;
-        min-width: 100%;
-    }
-    
 }
