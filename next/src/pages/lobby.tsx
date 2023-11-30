@@ -124,9 +124,6 @@ export default function LobbyPage() {
         })
 
         setSocket(newSocket)
-        return () => {
-            newSocket.disconnect()
-        }
     }, [])
 
     useEffect(() => {

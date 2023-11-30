@@ -1,5 +1,5 @@
 import { createClient } from 'redis';
-import { GameParameters } from '../../common/dist/index.js';
+import { GameParameters, gameCanStart } from '../../common/dist/index.js';
 /************************************************
  *                                              *
  *                 CONFIGURATION                *
@@ -449,8 +449,9 @@ async function removePlayerFromList(socketId, roomId) {
         console.error(`DB error when removing player ${socketId} from playerList ${roomId}`);
         throw err;
     }
+    const gameIsOver = await setGameOverIfGameInvalid(roomId);
     const gameIsEmpty = await deleteGameIfListEmpty(roomId);
-    if (!gameIsEmpty) {
+    if (!gameIsEmpty && !gameIsOver) {
         await replaceLeaderIfRemoved(socketId, roomId);
     }
 }
@@ -464,6 +465,14 @@ async function deletePlayerList(roomId) {
         console.error(`DB error when deleting playerList ${roomId}`);
         throw err;
     }
+}
+async function setGameOverIfGameInvalid(roomId) {
+    const game = await getGame(roomId);
+    if (gameCanStart(game))
+        return true;
+    game.status = "end";
+    await updateGame(game);
+    return false;
 }
 /**
  * Check if playerList is empty. Delete game and return true if empty, else return false.

@@ -1,5 +1,5 @@
 import { createClient } from 'redis'
-import { Result, Player, Game, GameParameters } from '../../common/dist/index.js'
+import { Result, Player, Game, GameParameters, gameCanStart } from '../../common/dist/index.js'
 
 type EmptyObject = Record<string, never>
 type RedisBool = 'true' | 'false'
@@ -576,9 +576,9 @@ async function removePlayerFromList(
         )
         throw err
     }
-
+    const gameIsOver = await setGameOverIfGameInvalid(roomId)
     const gameIsEmpty = await deleteGameIfListEmpty(roomId)
-    if (!gameIsEmpty) {
+    if (!gameIsEmpty && !gameIsOver) {
         await replaceLeaderIfRemoved(socketId, roomId)
     }
 }
@@ -592,6 +592,15 @@ async function deletePlayerList(roomId: string): Promise<void> {
         console.error(`DB error when deleting playerList ${roomId}`)
         throw err
     }
+}
+
+async function setGameOverIfGameInvalid(roomId: string): Promise<boolean> {
+    const game = await getGame(roomId)
+    if (gameCanStart(game)) return true;
+
+    game.status = "end"
+    await updateGame(game)
+    return false;
 }
 
 /**
