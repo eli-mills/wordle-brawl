@@ -4,26 +4,12 @@
     justify-content: top;
     align-items: center;
     padding: 2rem;
-    height: 100vh;
     box-sizing: border-box;
-}
-
-.main div {
-    width: 100%;
-    min-width: 40%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
 }
 
 .main h1 {
     font-size: 3rem;
     margin-top: 0;
-}
-
-.main h2 {
-    margin-bottom: 0;
-    align-self: flex-start;
 }
 
 .main button {
@@ -35,20 +21,10 @@
 @media (min-width: 1200px) {
     .main {
         justify-content: space-around;
-        padding: 0;
-    }
-
-    .main * {
-        max-width: 30%;
     }
 
     .main h1 {
         font-size: 4rem;
-    }
-
-    .main h2 {
-        font-size: 2rem;
-        max-width: 100%;
     }
 
     .main button {

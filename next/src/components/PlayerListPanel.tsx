@@ -7,7 +7,7 @@ export default function PlayerListPanel() {
     const { game } = useContext(GlobalContext)
 
     return (
-        <div>
+        <div className={styles.playerListContainer}>
             <h2>
                 Players ({game && Object.keys(game.playerList).length} /{' '}
                 {GameParameters.MAX_PLAYERS})

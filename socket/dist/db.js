@@ -467,6 +467,8 @@ async function deletePlayerList(roomId) {
     }
 }
 async function setGameOverIfGameInvalid(roomId) {
+    if (!await gameExists(roomId))
+        return false;
     const game = await getGame(roomId);
     if (gameCanStart(game))
         return true;
