@@ -43,13 +43,13 @@ export default function NameForm({
     }
 
     return (
-        <>
+        <div className={styles.nameFormContainer}>
             {displayNameForm ? (
                 <form className={styles.nameForm} onSubmit={onButtonClick}>
                     <label>Choose a Name:</label>
                     <input
                         type="text"
-                        maxLength={25}
+                        maxLength={14}
                         value={playerName}
                         onChange={(e) => {
                             setName(e.target.value)
@@ -65,6 +65,6 @@ export default function NameForm({
                     Change Name
                 </button>
             )}
-        </>
+        </div>
     )
 }

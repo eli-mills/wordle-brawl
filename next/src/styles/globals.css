@@ -39,3 +39,12 @@ ul {
 *:focus {
     outline: none;
 }
+
+.leader {
+    color: goldenrod;
+}
+
+.self {
+    border: 2px solid green;
+    padding: .2rem;
+}

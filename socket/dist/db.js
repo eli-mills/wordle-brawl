@@ -238,10 +238,12 @@ async function populateAvailableRoomIds() {
         return;
     }
     console.log('Populating rooms');
+    const roomIds = [];
     for (let i = 0; i < 10000; i++) {
         const roomId = i.toString().padStart(4, '0');
-        await redisClient.sAdd(AVAILABLE_ROOM_IDS, roomId);
+        roomIds.push(roomId);
     }
+    await redisClient.sAdd(AVAILABLE_ROOM_IDS, roomIds);
 }
 /************************************************
  *                                              *

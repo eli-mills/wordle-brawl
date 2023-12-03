@@ -308,10 +308,12 @@ async function populateAvailableRoomIds(): Promise<void> {
         return
     }
     console.log('Populating rooms')
+    const roomIds = [];
     for (let i: number = 0; i < 10000; i++) {
         const roomId: string = i.toString().padStart(4, '0')
-        await redisClient.sAdd(AVAILABLE_ROOM_IDS, roomId)
+        roomIds.push(roomId);
     }
+    await redisClient.sAdd(AVAILABLE_ROOM_IDS, roomIds)
 }
 
 /************************************************

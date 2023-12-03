@@ -38,8 +38,8 @@ export default function App({ Component, pageProps }: AppProps) {
 
     useEffect(() => {
         socket?.on(GameEvents.UPDATE_GAME_STATE, (gameState: Game) => {
-            const leader = gameState.playerList[gameState.leader.socketId]
-            leader.name = leader.name ? `👑 ${leader.name}` : leader.name
+            //const leader = gameState.playerList[gameState.leader.socketId]
+            //leader.name = leader.name ? `👑 ${leader.name}` : leader.name
             setGame(gameState)
             setPlayer(gameState.playerList[socket.id])
         })
