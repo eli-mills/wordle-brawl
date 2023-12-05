@@ -39,7 +39,7 @@ io.on('connection', async (newSocket) => {
  *                                              *
  ************************************************/
 function onSayHello(callback) {
-    console.log("say-hello event received");
+    console.log('say-hello event received');
     callback();
 }
 async function onDisconnect(socket) {
@@ -48,13 +48,14 @@ async function onDisconnect(socket) {
     // Delete player from db
     console.log(`Player ${socket.id} disconnected`);
     await db.deletePlayer(socket.id);
+    console.log(`Deleted player ${socket.id}, sending updated game state to room ${player.roomId}`);
     await emitUpdatedGameState(player.roomId);
 }
 async function onCreateGameRequest(socket, callback) {
     console.log(`Player ${socket.id} requests new game`);
     const newRoomId = await db.createGame(socket.id);
     if (!newRoomId) {
-        callback({ roomsAvailable: false, roomId: "" });
+        callback({ roomsAvailable: false, roomId: '' });
         return;
     }
     callback({ roomsAvailable: true, roomId: newRoomId });

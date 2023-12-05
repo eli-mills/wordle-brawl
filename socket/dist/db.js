@@ -451,11 +451,11 @@ async function removePlayerFromList(socketId, roomId) {
         console.error(`DB error when removing player ${socketId} from playerList ${roomId}`);
         throw err;
     }
-    const gameIsOver = await setGameOverIfGameInvalid(roomId);
     const gameIsEmpty = await deleteGameIfListEmpty(roomId);
-    if (!gameIsEmpty && !gameIsOver) {
+    if (!gameIsEmpty) {
         await replaceLeaderIfRemoved(socketId, roomId);
     }
+    await setGameOverIfGameInvalid(roomId);
 }
 async function deletePlayerList(roomId) {
     try {
@@ -470,13 +470,13 @@ async function deletePlayerList(roomId) {
 }
 async function setGameOverIfGameInvalid(roomId) {
     if (!await gameExists(roomId))
-        return false;
+        return;
     const game = await getGame(roomId);
-    if (gameCanStart(game))
-        return true;
+    if (gameCanStart(game) || game.status === "lobby")
+        return;
+    console.log(`Game ${roomId} is no longer playable, changing to end state.`);
     game.status = "end";
     await updateGame(game);
-    return false;
 }
 /**
  * Check if playerList is empty. Delete game and return true if empty, else return false.

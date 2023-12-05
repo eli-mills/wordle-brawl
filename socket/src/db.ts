@@ -578,11 +578,12 @@ async function removePlayerFromList(
         )
         throw err
     }
-    const gameIsOver = await setGameOverIfGameInvalid(roomId)
+
     const gameIsEmpty = await deleteGameIfListEmpty(roomId)
-    if (!gameIsEmpty && !gameIsOver) {
+    if (!gameIsEmpty) {
         await replaceLeaderIfRemoved(socketId, roomId)
     }
+    await setGameOverIfGameInvalid(roomId)
 }
 
 async function deletePlayerList(roomId: string): Promise<void> {
@@ -596,14 +597,14 @@ async function deletePlayerList(roomId: string): Promise<void> {
     }
 }
 
-async function setGameOverIfGameInvalid(roomId: string): Promise<boolean> {
-    if (!await gameExists(roomId)) return false;
+async function setGameOverIfGameInvalid(roomId: string): Promise<void> {
+    if (!await gameExists(roomId)) return;
     const game = await getGame(roomId)
-    if (gameCanStart(game)) return true;
+    if (gameCanStart(game) || game.status === "lobby") return;
 
+    console.log(`Game ${roomId} is no longer playable, changing to end state.`)
     game.status = "end"
     await updateGame(game)
-    return false;
 }
 
 /**

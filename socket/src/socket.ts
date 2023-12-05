@@ -40,8 +40,10 @@ export const io = new Server<ClientToServerEvents, ServerToClientEvents>(
 io.on('connection', async (newSocket) => {
     console.log(`User ${newSocket.id} connected.`)
     await db.createPlayer(newSocket.id)
-    newSocket.on(GameEvents.REQUEST_NEW_GAME, (callback: (response: NewGameRequestResponse) => void) =>
-        onCreateGameRequest(newSocket, callback)
+    newSocket.on(
+        GameEvents.REQUEST_NEW_GAME,
+        (callback: (response: NewGameRequestResponse) => void) =>
+            onCreateGameRequest(newSocket, callback)
     )
     newSocket.on(
         GameEvents.REQUEST_JOIN_GAME,
@@ -72,8 +74,8 @@ io.on('connection', async (newSocket) => {
  *                EVENT LISTENERS               *
  *                                              *
  ************************************************/
-function onSayHello(callback: ()=>void) {
-    console.log("say-hello event received")
+function onSayHello(callback: () => void) {
+    console.log('say-hello event received')
     callback()
 }
 
@@ -84,20 +86,25 @@ async function onDisconnect(socket: Socket): Promise<void> {
     // Delete player from db
     console.log(`Player ${socket.id} disconnected`)
     await db.deletePlayer(socket.id)
-
+    console.log(
+        `Deleted player ${socket.id}, sending updated game state to room ${player.roomId}`
+    )
     await emitUpdatedGameState(player.roomId)
 }
 
-async function onCreateGameRequest(socket: Socket, callback: (response: NewGameRequestResponse) => void): Promise<void> {
+async function onCreateGameRequest(
+    socket: Socket,
+    callback: (response: NewGameRequestResponse) => void
+): Promise<void> {
     console.log(`Player ${socket.id} requests new game`)
 
     const newRoomId = await db.createGame(socket.id)
     if (!newRoomId) {
-        callback({roomsAvailable: false, roomId: ""})
+        callback({ roomsAvailable: false, roomId: '' })
         return
     }
 
-    callback({roomsAvailable: true, roomId: newRoomId});
+    callback({ roomsAvailable: true, roomId: newRoomId })
     await emitUpdatedGameState(newRoomId)
 }
 
