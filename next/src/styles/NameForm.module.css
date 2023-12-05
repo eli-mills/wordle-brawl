@@ -9,41 +9,28 @@
     padding: 0;
     display: flex;
     flex-direction: column;
+    align-items: center;
     justify-content: space-around;
     width: 80%;
 }
 
-.nameForm * {
+.nameForm label, 
+.nameForm p,
+.nameForm input {
     font-size: 1.5rem;
 }
-
+.nameForm label {
+    text-align: left;
+    min-width: 100%;
+}
 .nameForm p {
     color: red;
     margin: 0;
     margin-top: 1rem;
 }
 
-.nameFormContainer button {
-    font-size: 1.5rem;
-    min-width: 100%;
-    margin: 1rem 0;
-}
-
 @media (min-width: 1200px) {
-
-
     .nameForm {
-        align-items: center;
         width: 40%;
-    }
-
-    .nameForm label {
-        text-align: left;
-        min-width: 100%;
-    }
-
-    .nameFormContainer button {
-        min-width: 0;
-        padding: 0.2rem 1rem;
     }
 }
