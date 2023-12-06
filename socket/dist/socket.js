@@ -49,6 +49,7 @@ async function onDisconnect(socket) {
     console.log(`Player ${socket.id} disconnected`);
     await db.deletePlayer(socket.id);
     console.log(`Deleted player ${socket.id}, sending updated game state to room ${player.roomId}`);
+    await startNextRoundIfReady(player.roomId);
     await emitUpdatedGameState(player.roomId);
 }
 async function onCreateGameRequest(socket, callback) {
@@ -134,11 +135,8 @@ async function onGuess(socket, guess) {
     socket.emit(GameEvents.EVALUATION, result);
     await emitUpdatedGameState(player.roomId);
     // Handle new round
-    if (await allPlayersHaveSolved(player.roomId)) {
-        await resetForNewRound(player.roomId);
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        await emitUpdatedGameState(player.roomId);
-    }
+    await startNextRoundIfReady(player.roomId);
+    await emitUpdatedGameState(player.roomId);
 }
 async function onBeginGameRequest(socket) {
     const player = await db.getPlayer(socket.id);
@@ -206,10 +204,17 @@ async function validateAnswerWord(word) {
     const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH);
     return await validator.validateWord(word);
 }
+/**
+ *
+ * @param roomId ID of the room the Game is being hosted in
+ * @returns true if all Players have solved the current round, false if not OR if game status not playing
+ */
 async function allPlayersHaveSolved(roomId) {
+    if (!(await db.gameExists(roomId)))
+        return false;
     const game = await db.getGame(roomId);
     if (game.status !== 'playing')
-        throw new Error(`Invalid state: checking if game ${roomId} with status ${game.status}`);
+        return false;
     return (Object.values(game.playerList).filter((player) => player.socketId !== game.chooser?.socketId && !player.finished).length === 0);
 }
 async function resetForNewRound(roomId) {
@@ -231,5 +236,12 @@ async function checkPlayerLastGuess(socket) {
         console.log(`Player ${player.socketId} struck out!`);
         player.finished = true;
         await db.updatePlayer(player);
+    }
+}
+async function startNextRoundIfReady(roomId) {
+    if (await allPlayersHaveSolved(roomId)) {
+        await resetForNewRound(roomId);
+        // Timeout for players to see their results
+        await new Promise((resolve) => setTimeout(resolve, 3000));
     }
 }

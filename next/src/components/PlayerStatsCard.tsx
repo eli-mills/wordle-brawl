@@ -1,10 +1,11 @@
-import { Player } from "../../../common";
+import { Player } from '../../../common'
+import styles from '@/styles/GameOverPanel.module.css'
 
-export default function PlayerStatsCard({player}: {player: Player}) {
+export default function PlayerStatsCard({ player }: { player: Player }) {
     return (
-        <div>
+        <div className={styles.playerStatsCard}>
             <h1>{player.name}</h1>
-            <h2>Score: {player.score}</h2>
+            <p>Score: {player.score}</p>
         </div>
     )
 }

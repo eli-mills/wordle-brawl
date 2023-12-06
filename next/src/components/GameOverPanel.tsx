@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import { GlobalContext } from '@/pages/_app'
 import { GameEvents, gameCanStart } from '../../../common'
 import PlayerStatsCard from './PlayerStatsCard'
+import styles from '@/styles/GameOverPanel.module.css'
 
 export default function GameOverPanel() {
     const router = useRouter()
@@ -19,19 +20,21 @@ export default function GameOverPanel() {
     }
 
     return (
-        <div>
+        <div className={styles.gameOverPanel}>
             <h1>Game Over</h1>
-            {game &&
-                Object.values(game.playerList).map((player) =>
-                    PlayerStatsCard({ player })
-                )}
+            <button onClick={onClickHome}>Return Home</button>
             {player &&
                 game &&
                 player.socketId === game.leader.socketId &&
                 gameCanStart(game) && (
                     <button onClick={onClickPlayAgain}>Play Again?</button>
                 )}
-            <button onClick={onClickHome}>Return Home</button>
+            <div className={styles.playerStatsContainer}>
+                {game &&
+                    Object.values(game.playerList).map((player, key) => (
+                        <PlayerStatsCard player={player} key={key} />
+                    ))}
+            </div>
         </div>
     )
 }

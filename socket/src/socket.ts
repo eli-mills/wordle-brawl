@@ -89,6 +89,7 @@ async function onDisconnect(socket: Socket): Promise<void> {
     console.log(
         `Deleted player ${socket.id}, sending updated game state to room ${player.roomId}`
     )
+    await startNextRoundIfReady(player.roomId)
     await emitUpdatedGameState(player.roomId)
 }
 
@@ -210,11 +211,8 @@ async function onGuess(socket: Socket, guess: string): Promise<void> {
     await emitUpdatedGameState(player.roomId)
 
     // Handle new round
-    if (await allPlayersHaveSolved(player.roomId)) {
-        await resetForNewRound(player.roomId)
-        await new Promise<void>((resolve) => setTimeout(resolve, 5000))
-        await emitUpdatedGameState(player.roomId)
-    }
+    await startNextRoundIfReady(player.roomId)
+    await emitUpdatedGameState(player.roomId)
 }
 
 async function onBeginGameRequest(
@@ -305,12 +303,16 @@ async function validateAnswerWord(word: string): Promise<boolean> {
     return await validator.validateWord(word)
 }
 
+/**
+ *
+ * @param roomId ID of the room the Game is being hosted in
+ * @returns true if all Players have solved the current round, false if not OR if game status not playing
+ */
 async function allPlayersHaveSolved(roomId: string): Promise<boolean> {
+    if (!(await db.gameExists(roomId))) return false
+
     const game = await db.getGame(roomId)
-    if (game.status !== 'playing')
-        throw new Error(
-            `Invalid state: checking if game ${roomId} with status ${game.status}`
-        )
+    if (game.status !== 'playing') return false
 
     return (
         Object.values(game.playerList).filter(
@@ -341,5 +343,14 @@ async function checkPlayerLastGuess(socket: Socket): Promise<void> {
         console.log(`Player ${player.socketId} struck out!`)
         player.finished = true
         await db.updatePlayer(player)
+    }
+}
+
+async function startNextRoundIfReady(roomId: string): Promise<void> {
+    if (await allPlayersHaveSolved(roomId)) {
+        await resetForNewRound(roomId)
+
+        // Timeout for players to see their results
+        await new Promise<void>((resolve) => setTimeout(resolve, 3000))
     }
 }

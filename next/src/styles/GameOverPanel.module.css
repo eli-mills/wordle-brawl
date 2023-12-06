@@ -1,0 +1,29 @@
+.gameOverPanel {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.gameOverPanel h1 {
+    font-size: 4rem;
+}
+
+.gameOverPanel button {
+    font-size: 1.5rem;
+}
+
+.playerStatsContainer {
+    background-color: pink;
+}
+
+.playerStatsCard {
+    padding: 0;
+}
+
+.playerStatsCard h1 {
+    font-size: 3rem;
+    margin: 0;
+}

@@ -17,6 +17,19 @@
     background-color: green;
 }
 
+.main > button:disabled {
+    background-color: grey;
+    font-style: italic;
+    color: green;
+}
+
+@media (hover: hover) {
+    .main > button:hover:enabled {
+        background-color: lightgreen;
+        color: black;
+    }
+}
+
 .main button {
     font-size: 1.5rem;
     margin: 1rem 0;
