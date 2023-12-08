@@ -12,13 +12,13 @@ export default function GamePage() {
 
     return (
         <>
-            <Head>
-                <title>Wordle WS</title>
-            </Head>
             <main className={styles.main}>
                 {game?.status === 'playing' && (
                     <>
-                        <h1> {player?.name} </h1>
+                        <div className={styles.playerScoreContainer}>
+                            <p className={styles.playerName}> {player?.name} </p>
+                            <p className={styles.playerScore}>|Score: {player?.score}</p>
+                        </div>
 
                         {game?.chooser?.socketId === player?.socketId ? (
                             <h2>
@@ -29,7 +29,6 @@ export default function GamePage() {
                         ) : (
                             <GamePanel />
                         )}
-                        <h2>Your Score: {player?.score}</h2>
                         <OpponentPanel />
                     </>
                 )}

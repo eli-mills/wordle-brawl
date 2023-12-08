@@ -29,9 +29,6 @@ export default function HomePage() {
 
     return (
         <>
-            <Head>
-                <title>Wordle WS</title>
-            </Head>
             <main className={style.main}>
                 <h1> Wordle With Friends </h1>
                 <form className={style.roomForm} onSubmit={onSubmit}>

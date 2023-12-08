@@ -1,5 +1,6 @@
 import '@/styles/globals.css'
 import type { AppProps } from 'next/app'
+import Head from 'next/head'
 import { createContext, useState, useEffect } from 'react'
 import { Socket } from 'socket.io-client'
 import {
@@ -61,6 +62,9 @@ export default function App({ Component, pageProps }: AppProps) {
 
     return (
         <GlobalContext.Provider value={{ ...globalState }}>
+            <Head>
+                <title>Wordle With Friends</title>
+            </Head>
             <NavBar />
             <Component {...pageProps} />
         </GlobalContext.Provider>

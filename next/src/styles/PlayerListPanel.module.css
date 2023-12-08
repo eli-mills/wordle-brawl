@@ -26,7 +26,9 @@
     text-align: center;
     word-break: keep-all;
     margin: .5rem;
+    padding: .2rem .5rem;
     max-width: 100%;
+    box-sizing: border-box;
 }
 
 .playerListContainer h2 {
@@ -42,4 +44,5 @@
     .playerListContainer h2 {
         font-size: 2rem;
     }
+
 }

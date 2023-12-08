@@ -150,9 +150,6 @@ export default function LobbyPage() {
 
     return (
         <>
-            <Head>
-                <title>Wordle WS</title>
-            </Head>
             {game ? (
                 <main className={styles.main}>
                     <h1>Room {game?.roomId}</h1>

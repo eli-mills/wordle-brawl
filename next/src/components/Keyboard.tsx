@@ -67,7 +67,7 @@ export default function Keyboard({
      *                                                  *
     ****************************************************/
     const handleKeyPressEvent = (e: KeyboardEvent) => {
-        if (player?.solved) return;
+        if (player?.finished) return;
         const letters = "QWERTYUIOPASDFGHJKLZXCVBNM";
         if (e.key === "Enter") {
             trySubmitGuess();

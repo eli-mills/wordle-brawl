@@ -18,7 +18,7 @@ function convertGuessRowToEmojis(guessRow: Result[]) : string {
 export default function OpponentCard ( {player }: OpponentCardArgs ) {
     return (
         <div className={styles.opponentCard}>
-            <h3>{player.name}: {player.score} points</h3>
+            <h3>{player.name}: {player.score}</h3>
             {player.guessResultHistory.map((row: Result[], key: number)=><p key={key}>{convertGuessRowToEmojis(row)}</p>)}
         </div>
     )
