@@ -1,0 +1,10 @@
+.main {
+    background-color: blue;
+}
+
+@media (min-width: 1200px) {
+    .main {
+        background-color: pink;
+        
+    }
+}

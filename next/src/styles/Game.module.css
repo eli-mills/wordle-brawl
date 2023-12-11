@@ -37,3 +37,9 @@
     box-sizing: border-box;
     font-weight: bold;
 }
+
+@media (min-width: 1200px) {
+    .playerScoreContainer * {
+        font-size: 3rem;
+    }
+}

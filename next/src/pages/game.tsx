@@ -16,8 +16,13 @@ export default function GamePage() {
                 {game?.status === 'playing' && (
                     <>
                         <div className={styles.playerScoreContainer}>
-                            <p className={styles.playerName}> {player?.name} </p>
-                            <p className={styles.playerScore}>|Score: {player?.score}</p>
+                            <p className={styles.playerName}>
+                                {' '}
+                                {player?.name}{' '}
+                            </p>
+                            <p className={styles.playerScore}>
+                                |Score: {player?.score}
+                            </p>
                         </div>
 
                         {game?.chooser?.socketId === player?.socketId ? (
