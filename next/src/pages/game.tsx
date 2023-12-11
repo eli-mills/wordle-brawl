@@ -17,16 +17,11 @@ export default function GamePage() {
                 {game?.status === 'playing' && (
                     <>
                         <PlayerName />
-
-                        {game?.chooser?.socketId === player?.socketId ? (
-                            <h2>
-                                {' '}
-                                You picked the word! Wait here while everyone
-                                guesses{' '}
-                            </h2>
-                        ) : (
-                            <GamePanel />
-                        )}
+                        <GamePanel
+                            selfIsChooser={
+                                game?.chooser?.socketId === player?.socketId
+                            }
+                        />
                         <OpponentPanel />
                     </>
                 )}

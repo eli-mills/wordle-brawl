@@ -1,22 +1,24 @@
-import { useState } from 'react';
-import GuessGroup from '@/components/GuessGroup';
-import Keyboard from '@/components/Keyboard';
-import styles from '@/styles/GamePanel.module.css';
+import { useState } from 'react'
+import GuessGroup from '@/components/GuessGroup'
+import Keyboard from '@/components/Keyboard'
+import styles from '@/styles/GamePanel.module.css'
 
-export default function GamePanel() {
-    const [guesses, setGuesses] = useState(
-        [
-            Array(5).fill(""),
-            Array(5).fill(""),
-            Array(5).fill(""),
-            Array(5).fill(""),
-            Array(5).fill(""),
-            Array(5).fill(""),
-        ]
-    );
-    const [currentGuessNum, setCurrentGuessNum] = useState(0);
-    const [currentLetterNum, setCurrentLetterNum] = useState(0);
-    
+type GamePanelProps = {
+    selfIsChooser: boolean
+}
+
+export default function GamePanel({ selfIsChooser }: GamePanelProps) {
+    const [guesses, setGuesses] = useState([
+        Array(5).fill(''),
+        Array(5).fill(''),
+        Array(5).fill(''),
+        Array(5).fill(''),
+        Array(5).fill(''),
+        Array(5).fill(''),
+    ])
+    const [currentGuessNum, setCurrentGuessNum] = useState(0)
+    const [currentLetterNum, setCurrentLetterNum] = useState(0)
+
     const keyboardProps = {
         guesses,
         setGuesses,
@@ -27,9 +29,15 @@ export default function GamePanel() {
     }
 
     return (
-        <div className={styles.gamePanel}>
-            <GuessGroup guesses={guesses}/>
-            <Keyboard {...keyboardProps} />
-        </div>
-    );
+        <>
+            {selfIsChooser ? (
+                <h2>You picked the word! Wait here while everyone guesses</h2>
+            ) : (
+                <div className={styles.gamePanel}>
+                    <GuessGroup guesses={guesses} />
+                    <Keyboard {...keyboardProps} />
+                </div>
+            )}
+        </>
+    )
 }
