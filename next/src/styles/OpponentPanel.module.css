@@ -1,11 +1,46 @@
 .main {
-    background-color: blue;
+    background-color: green;
+    width: 80%;
+    height: 100vh;
+    position: absolute;
+    right: 0;
+    overflow: hidden;
 }
+
+
 
 @media (min-width: 1200px) {
     .main {
         background-color: pink;
         width: 20%;
-        height: 100vh;
+        position: static;
+    }
+
+    .hideOpponentPanelButton, 
+    .showOpponentPanelButton {
+        display: none;
+    }
+}
+
+@media (max-width: 1199px) {
+    .minimized {
+        top: 2.2rem;
+        width: 2rem;
+        height: 3rem;
+        border-radius: .5rem 0 0 .5rem;
+    }
+    
+    .showOpponentPanelButton {
+        display: none;
+    }
+    
+    .minimized .hideOpponentPanelButton,
+    .minimized .opponentCardList {
+        display: none;
+    }
+    
+    .minimized .showOpponentPanelButton {
+        display: inline;
+        margin: .5rem;
     }
 }
