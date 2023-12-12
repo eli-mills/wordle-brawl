@@ -5,6 +5,7 @@
 @media (min-width: 1200px) {
     .main {
         background-color: pink;
-        
+        width: 20%;
+        height: 100vh;
     }
 }

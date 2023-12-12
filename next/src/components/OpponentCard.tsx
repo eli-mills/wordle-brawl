@@ -1,5 +1,6 @@
 import styles from '@/styles/OpponentCard.module.css';
 import { Result, Player } from '../../../common';
+import PlayerName from './PlayerName';
 
 type OpponentCardArgs = {
     player: Player,
@@ -18,7 +19,7 @@ function convertGuessRowToEmojis(guessRow: Result[]) : string {
 export default function OpponentCard ( {player }: OpponentCardArgs ) {
     return (
         <div className={styles.opponentCard}>
-            <h3>{player.name}: {player.score}</h3>
+            <PlayerName {...player} />
             {player.guessResultHistory.map((row: Result[], key: number)=><p key={key}>{convertGuessRowToEmojis(row)}</p>)}
         </div>
     )

@@ -9,3 +9,19 @@
 .main h1 {
     text-align: center;
 }
+
+.playingGroup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 100%;
+}
+
+@media (min-width: 1200px) {
+    .playingGroup {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: center;
+    }
+}

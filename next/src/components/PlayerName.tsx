@@ -1,13 +1,15 @@
-import { useContext } from 'react'
-import { GlobalContext } from '@/pages/_app'
 import styles from '@/styles/PlayerName.module.css'
 
-export default function PlayerName() {
-    const { player } = useContext(GlobalContext)
+type PlayerNameProps = {
+    name: string,
+    score: number, 
+}
+
+export default function PlayerName({name, score}: PlayerNameProps) {
     return (
         <div className={styles.playerScoreContainer}>
-            <p className={styles.playerName}>{player?.name}</p>
-            <p className={styles.playerScore}>|Score: {player?.score}</p>
+            <p className={styles.playerName}>{name}</p>
+            <p className={styles.playerScore}>|Score: {score}</p>
         </div>
     )
 }
