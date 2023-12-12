@@ -1,18 +1,27 @@
 .main {
-    background-color: green;
-    width: 10rem;
+    background-color: #555555;
+    width: 15rem;
     height: 100vh;
     position: absolute;
+    top: 0;
     right: 0;
     overflow: hidden;
     overflow-y: scroll;
 }
 
+.hideOpponentPanelButton {
+    margin: 1rem;
+}
+
+.hideOpponentPanelButton,
+.showOpponentPanelButton {
+    font-size: 2rem;
+}
 
 
+/* Large screens */
 @media (min-width: 1200px) {
     .main {
-        background-color: pink;
         width: 20rem;
         position: static;
     }
@@ -23,12 +32,17 @@
     }
 }
 
+/* Small screens */
 @media (max-width: 1199px) {
     .minimized {
-        top: 2.2rem;
+        position: absolute;
+        top: 5rem;
         width: 2rem;
         height: 3rem;
         border-radius: .5rem 0 0 .5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .showOpponentPanelButton {

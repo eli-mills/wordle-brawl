@@ -7,6 +7,18 @@
     font-size: 1.2rem;
 }
 
+.opponentCard ul {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.opponentCard li {
+    letter-spacing: 5px;
+}
+
 @media (min-width: 1200px) {
     .opponentCard p {
         font-size: 1.6rem;

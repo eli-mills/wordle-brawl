@@ -20,7 +20,9 @@ export default function OpponentCard ( {player }: OpponentCardArgs ) {
     return (
         <div className={styles.opponentCard}>
             <PlayerName {...player} />
-            {player.guessResultHistory.map((row: Result[], key: number)=><p key={key}>{convertGuessRowToEmojis(row)}</p>)}
+            <ul>
+            {player.guessResultHistory.map((row: Result[], key: number)=><li key={key}>{convertGuessRowToEmojis(row)}</li>)}
+            </ul>
         </div>
     )
 }
