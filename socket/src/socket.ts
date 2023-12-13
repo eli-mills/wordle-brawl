@@ -14,7 +14,6 @@ import {
 import {
     evaluateGuess,
     FileWordValidator,
-    ALLOWED_ANSWERS_PATH,
 } from './evaluation.js'
 import { rewardPointsToChooser, rewardPointsToPlayer } from './reward-points.js'
 
@@ -186,7 +185,8 @@ async function onGuess(socket: Socket, guess: string): Promise<void> {
         )
 
     // Evaluate result
-    const result = await evaluateGuess(guess, player.roomId)
+    const validator = new FileWordValidator(FileWordValidator.ALLOWED_GUESSES_PATH)
+    const result = await evaluateGuess(guess, player.roomId, validator)
 
     result.resultByPosition &&
         (await db.createGuessResult(player.socketId, result.resultByPosition))
@@ -280,7 +280,7 @@ async function onStartOver(socket: Socket): Promise<void> {
 async function onRequestValidWord(
     callback: (validWord: string) => void
 ): Promise<void> {
-    const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH)
+    const validator = new FileWordValidator(FileWordValidator.ALLOWED_ANSWERS_PATH)
     const validWord = await validator.getRandomValidWord()
     callback(validWord)
 }
@@ -299,7 +299,7 @@ async function emitUpdatedGameState(roomId: string): Promise<void> {
 }
 
 async function validateAnswerWord(word: string): Promise<boolean> {
-    const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH)
+    const validator = new FileWordValidator(FileWordValidator.ALLOWED_ANSWERS_PATH)
     return await validator.validateWord(word)
 }
 

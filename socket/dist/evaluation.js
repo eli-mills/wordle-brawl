@@ -1,12 +1,17 @@
 import { promises as fsPromises } from 'fs';
-import path from 'path';
 import { getGame } from './db.js';
-const ALLOWED_GUESSES_PATH = 'data/allowed.txt';
-export const ALLOWED_ANSWERS_PATH = 'data/answers.txt';
 export class FileWordValidator {
     filePath;
     constructor(filePath) {
         this.filePath = filePath;
+    }
+    static _ALLOWED_GUESSES_PATH = 'data/allowed.txt';
+    static _ALLOWED_ANSWERS_PATH = 'data/answers.txt';
+    static get ALLOWED_GUESSES_PATH() {
+        return FileWordValidator._ALLOWED_GUESSES_PATH;
+    }
+    static get ALLOWED_ANSWERS_PATH() {
+        return FileWordValidator._ALLOWED_ANSWERS_PATH;
     }
     async validateWord(wordToValidate) {
         const file = await fsPromises.open(this.filePath);
@@ -51,26 +56,27 @@ export class FileWordValidator {
 }
 function mutateIfHits(guess, solution, byPosition, byLetter) {
     for (let i = 0; i < 5; ++i) {
-        byLetter[guess[i]] = 'miss';
         if (guess[i] === solution[i]) {
             byPosition[i] = 'hit';
             byLetter[guess[i]] = 'hit';
-            solution[i] = '';
+        }
+        else {
+            byPosition[i] = 'miss';
+            byLetter[guess[i]] = byLetter[guess[i]] === 'hit' ? 'hit' : 'miss';
         }
     }
 }
 function mutateIfHas(guess, solution, byPosition, byLetter) {
+    const tempSolution = Array.from(solution);
     for (let i = 0; i < 5; ++i) {
-        if (solution.includes(guess[i])) {
+        if (tempSolution.includes(guess[i])) {
             byPosition[i] = byPosition[i] !== 'hit' ? 'has' : 'hit';
             byLetter[guess[i]] = byLetter[guess[i]] !== 'hit' ? 'has' : 'hit';
-            solution[solution.indexOf(guess[i])] = '';
+            tempSolution[tempSolution.indexOf(guess[i])] = '';
         }
     }
 }
-export async function evaluateGuess(guess, roomId) {
-    const filePath = path.join(process.cwd(), ALLOWED_GUESSES_PATH);
-    const validator = new FileWordValidator(filePath);
+export async function evaluateGuess(guess, roomId, validator) {
     const accepted = await validator.validateWord(guess);
     if (!accepted)
         return { accepted, correct: false };
@@ -86,6 +92,10 @@ export async function evaluateGuess(guess, roomId) {
     const resultByPosition = Array(5).fill('miss');
     const resultByLetter = {};
     mutateIfHits(guess, answerSplit, resultByPosition, resultByLetter);
+    console.log(JSON.stringify(resultByPosition));
+    console.log(JSON.stringify(resultByLetter));
     mutateIfHas(guess, answerSplit, resultByPosition, resultByLetter);
+    console.log(JSON.stringify(resultByPosition));
+    console.log(JSON.stringify(resultByLetter));
     return { resultByPosition, resultByLetter, accepted, correct: false };
 }
