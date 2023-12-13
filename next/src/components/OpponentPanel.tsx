@@ -25,7 +25,7 @@ export default function OpponentPanel() {
 
     return (
         <div className={`${styles.main} ${styles.minimized}`}>
-            <GoSidebarExpand className={styles.showOpponentPanelButton} onClick={showOpponentPanel}/>
+            <GoSidebarExpand size="70" className={styles.showOpponentPanelButton} onClick={showOpponentPanel}/>
             <RxCross1
                 className={styles.hideOpponentPanelButton}
                 onClick={hideOpponentPanel}

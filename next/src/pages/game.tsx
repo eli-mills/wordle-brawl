@@ -25,7 +25,7 @@ export default function GamePage() {
             )}
             {game?.status === 'choosing' &&
                 (game?.chooser?.socketId !== player?.socketId ? (
-                    <h1> {game.chooser?.name} is choosing a word </h1>
+                    <h1 className={styles.waitingMessage}> {game.chooser?.name} is choosing a word </h1>
                 ) : (
                     <ChoosingPanel />
                 ))}
