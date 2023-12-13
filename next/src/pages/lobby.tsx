@@ -60,17 +60,13 @@ function handleRoomQuery(
     )
     switch (room) {
         case GameEvents.REQUEST_NEW_GAME:
-            console.log('New game request received, emitting to socket...')
-            // socket.emit(GameEvents.SAY_HELLO, () =>
-            //     console.log('Inside say-hello callback')
-            // )
             socket
                 .timeout(3000)
                 .emit(
                     GameEvents.REQUEST_NEW_GAME,
-                    (err: Error, response: NewGameRequestResponse) => {
+                    (err, response) => {
                         if (err) {
-                            console.log('Timeout, emitting again')
+                            console.log('Timeout on REQUEST_NEW_GAME, emitting again')
                             socket.emit(
                                 GameEvents.REQUEST_NEW_GAME,
                                 (response) => {
@@ -95,9 +91,18 @@ function handleRoomQuery(
                 router.push('/')
                 break
             }
-            socket.emit(GameEvents.REQUEST_JOIN_GAME, room, (response) =>
-                handleJoinGameResponse(response, router)
-            )
+            socket
+                .timeout(3000)
+                .emit(GameEvents.REQUEST_JOIN_GAME, room, (err, response) => {
+
+                    if (err) {
+                        console.log("Timeout on REQUEST_JOIN_GAME, emitting again")
+                        socket.emit(GameEvents.REQUEST_JOIN_GAME, room, response => handleJoinGameResponse(response, router))
+                    } else {
+                        handleJoinGameResponse(response, router)
+                    }
+                }
+                )
     }
 }
 
