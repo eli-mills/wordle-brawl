@@ -1,14 +1,23 @@
+.main {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
 .gamePanel {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
-.main {
-    width: 100%;
-    overflow: hidden;
-}
 .main p {
     font-size: 1.5rem;
+}
+.main h2 {
+    text-align: center;
+    padding: 0 2rem;
 }
 
 @media (min-width: 1200px) {

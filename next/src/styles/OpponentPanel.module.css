@@ -1,12 +1,13 @@
 .main {
     background-color: #555555;
     width: 15rem;
-    height: 100vh;
+    height: 90dvh;
     position: absolute;
     top: 0;
     right: 0;
     overflow: hidden;
     overflow-y: auto;
+    border: 1px solid white;
 }
 
 .hideOpponentPanelButton {
@@ -15,9 +16,8 @@
 
 .hideOpponentPanelButton,
 .showOpponentPanelButton {
-    font-size: 2rem;
+    font-size: 2em;
 }
-
 
 /* Large screens */
 @media (min-width: 1200px) {
@@ -26,7 +26,7 @@
         position: static;
     }
 
-    .hideOpponentPanelButton, 
+    .hideOpponentPanelButton,
     .showOpponentPanelButton {
         display: none;
     }
@@ -37,25 +37,26 @@
     .minimized {
         position: absolute;
         top: 5rem;
-        width: 2rem;
-        height: 3rem;
-        border-radius: .5rem 0 0 .5rem;
+        width: 2.5rem;
+        height: 5rem;
+        border-right: none;
+        border-radius: 0.5rem 0 0 0.5rem;
         display: flex;
         align-items: center;
         justify-content: center;
     }
-    
+
     .showOpponentPanelButton {
         display: none;
     }
-    
+
     .minimized .hideOpponentPanelButton,
     .minimized .opponentCardList {
         display: none;
     }
-    
+
     .minimized .showOpponentPanelButton {
         display: inline;
-        margin: .5rem;
+        margin: 0.5rem;
     }
 }
