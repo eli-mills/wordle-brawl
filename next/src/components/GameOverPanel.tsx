@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import { GlobalContext } from '@/pages/_app'
 import { GameEvents, gameCanStart } from '../../../common'
 import PlayerStatsCard from './PlayerStatsCard'
+import PlayerName from './PlayerName'
 import styles from '@/styles/GameOverPanel.module.css'
 
 export default function GameOverPanel() {
@@ -29,12 +30,14 @@ export default function GameOverPanel() {
                 gameCanStart(game) && (
                     <button onClick={onClickPlayAgain}>Play Again?</button>
                 )}
-            <div className={styles.playerStatsContainer}>
+            <ol className={styles.playerStatsContainer}>
                 {game &&
-                    Object.values(game.playerList).map((player, key) => (
-                        <PlayerStatsCard player={player} key={key} />
+                    Object.values(game.playerList).toSorted((a,b) => b.score - a.score).map((player, key) => (
+                        <li key={ key}>
+                            <PlayerName {...player} />
+                        </li>
                     ))}
-            </div>
+            </ol>
         </div>
     )
 }
