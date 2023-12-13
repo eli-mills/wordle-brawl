@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import * as db from './db.js';
 import { GameEvents, GameParameters, gameCanStart, } from '../../common/dist/index.js';
 import { evaluateGuess, FileWordValidator, ALLOWED_ANSWERS_PATH, } from './evaluation.js';
+import { rewardPointsToChooser, rewardPointsToPlayer } from './reward-points.js';
 /************************************************
  *                                              *
  *                CONFIGURATION                 *
@@ -20,7 +21,7 @@ export const io = new Server(httpServer, {
 io.on('connection', async (newSocket) => {
     console.log(`User ${newSocket.id} connected.`);
     await db.createPlayer(newSocket.id);
-    newSocket.on(GameEvents.REQUEST_NEW_GAME, () => onCreateGameRequest(newSocket));
+    newSocket.on(GameEvents.REQUEST_NEW_GAME, (callback) => onCreateGameRequest(newSocket, callback));
     newSocket.on(GameEvents.REQUEST_JOIN_GAME, (roomId, callback) => onJoinGameRequest(newSocket, roomId, callback));
     newSocket.on(GameEvents.DECLARE_NAME, (name, callback) => onDeclareName(newSocket, name, callback));
     newSocket.on(GameEvents.GUESS, (guess) => onGuess(newSocket, guess));
@@ -30,38 +31,45 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.CHOOSE_WORD, (word) => onChooseWord(newSocket, word));
     newSocket.on(GameEvents.START_OVER, () => onStartOver(newSocket));
     newSocket.on(GameEvents.REQUEST_VALID_WORD, onRequestValidWord);
+    newSocket.on(GameEvents.SAY_HELLO, onSayHello);
 });
 /************************************************
  *                                              *
  *                EVENT LISTENERS               *
  *                                              *
  ************************************************/
+function onSayHello(callback) {
+    console.log('say-hello event received');
+    callback();
+}
 async function onDisconnect(socket) {
     // Get player room
     const player = await db.getPlayer(socket.id);
     // Delete player from db
     console.log(`Player ${socket.id} disconnected`);
     await db.deletePlayer(socket.id);
+    console.log(`Deleted player ${socket.id}, sending updated game state to room ${player.roomId}`);
+    await startNextRoundIfReady(player.roomId);
     await emitUpdatedGameState(player.roomId);
 }
-async function onCreateGameRequest(socket) {
+async function onCreateGameRequest(socket, callback) {
     console.log(`Player ${socket.id} requests new game`);
     const newRoomId = await db.createGame(socket.id);
     if (!newRoomId) {
-        socket.emit(GameEvents.NO_ROOMS_AVAILABLE);
+        callback({ roomsAvailable: false, roomId: '' });
         return;
     }
-    socket.emit(GameEvents.NEW_GAME_CREATED, newRoomId);
+    callback({ roomsAvailable: true, roomId: newRoomId });
     await emitUpdatedGameState(newRoomId);
 }
 async function onJoinGameRequest(socket, roomId, callback) {
     console.log(`Player ${socket.id} requests to join room ${roomId}`);
     const player = await db.getPlayer(socket.id);
-    const game = await db.getGame(roomId);
     if (!(await db.gameExists(roomId))) {
         console.log(`Game ${roomId} does not exist`);
         return callback('DNE');
     }
+    const game = await db.getGame(roomId);
     if (Object.keys(game.playerList).length >= GameParameters.MAX_PLAYERS) {
         console.log(`Game ${roomId} is full.`);
         return callback('MAX');
@@ -77,13 +85,19 @@ async function onJoinGameRequest(socket, roomId, callback) {
     return callback('OK');
 }
 async function onDeclareName(socket, name, callback) {
+    if (!/\S/.test(name)) {
+        console.log(`Player ${socket.id} declared empty name.`);
+        return callback('EMPTY');
+    }
     const player = await db.getPlayer(socket.id);
     const game = await db.getGame(player.roomId);
     // Check for duplicate name
-    const playerNames = Object.values(game.playerList).map((player) => player.name);
+    const playerNames = Object.values(game.playerList)
+        .filter((player) => player.socketId !== socket.id)
+        .map((player) => player.name);
     if (playerNames.includes(name)) {
         console.log(`Duplicate name not allowed: player ${socket.id} requests ${name}`);
-        callback({ accepted: false, duplicate: true });
+        callback('DUP');
         return;
     }
     // Update name
@@ -91,7 +105,7 @@ async function onDeclareName(socket, name, callback) {
     player.name = name;
     await db.updatePlayer(player);
     // Response
-    callback({ accepted: true, duplicate: false });
+    callback('OK');
     await emitUpdatedGameState(player.roomId);
 }
 async function onGuess(socket, guess) {
@@ -111,18 +125,17 @@ async function onGuess(socket, guess) {
         await db.addPlayerToSolvedList(player.socketId, player.roomId);
         player.finished = true;
         await db.updatePlayer(player);
-        rewardPointsToPlayer(socket);
+        await rewardPointsToPlayer(socket);
     }
     else {
         await checkPlayerLastGuess(socket);
     }
-    // Handle new round
-    if (await allPlayersHaveSolved(player.roomId)) {
-        await resetForNewRound(player.roomId);
-    }
     // Send state
     console.log('Sending results');
     socket.emit(GameEvents.EVALUATION, result);
+    await emitUpdatedGameState(player.roomId);
+    // Handle new round
+    await startNextRoundIfReady(player.roomId);
     await emitUpdatedGameState(player.roomId);
 }
 async function onBeginGameRequest(socket) {
@@ -159,6 +172,22 @@ async function onChooseWord(socket, word) {
     await db.updateGame(game);
     await emitUpdatedGameState(player.roomId);
 }
+async function onStartOver(socket) {
+    const player = await db.getPlayer(socket.id);
+    const game = await db.getGame(player.roomId);
+    for (const player of Object.values(game.playerList)) {
+        player.score = 0;
+        await db.updatePlayer(player);
+    }
+    await db.resetChoosersForNewGame(game.roomId);
+    await resetForNewRound(game.roomId);
+    await emitUpdatedGameState(game.roomId);
+}
+async function onRequestValidWord(callback) {
+    const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH);
+    const validWord = await validator.getRandomValidWord();
+    callback(validWord);
+}
 /************************************************
  *                                              *
  *                    HELPERS                   *
@@ -176,28 +205,16 @@ async function validateAnswerWord(word) {
     return await validator.validateWord(word);
 }
 /**
- * Adds points to given Player and saves to DB.
  *
- * @param player: Player object to mutate
+ * @param roomId ID of the room the Game is being hosted in
+ * @returns true if all Players have solved the current round, false if not OR if game status not playing
  */
-async function rewardPointsToPlayer(socket) {
-    const player = await db.getPlayer(socket.id);
-    if (player.guessResultHistory.length === 0)
-        throw new Error(`Invalid state: player ${player.socketId} is being rewarded points with no guesses for game ${player.roomId}`);
-    // Add efficiency points
-    const efficiencyPoints = GameParameters.EFFICIENCY_POINTS[player.guessResultHistory.length];
-    player.score += efficiencyPoints;
-    // Add speed bonus
-    const firstSolver = await db.getFirstSolver(player.roomId);
-    if (firstSolver.socketId === player.socketId) {
-        player.score += GameParameters.SPEED_BONUS;
-    }
-    await db.updatePlayer(player);
-}
 async function allPlayersHaveSolved(roomId) {
+    if (!(await db.gameExists(roomId)))
+        return false;
     const game = await db.getGame(roomId);
     if (game.status !== 'playing')
-        throw new Error(`Invalid state: checking if game ${roomId} with status ${game.status}`);
+        return false;
     return (Object.values(game.playerList).filter((player) => player.socketId !== game.chooser?.socketId && !player.finished).length === 0);
 }
 async function resetForNewRound(roomId) {
@@ -213,20 +230,6 @@ async function resetForNewRound(roomId) {
     }
     await db.updateGame(game);
 }
-async function rewardPointsToChooser(socket) {
-    const player = await db.getPlayer(socket.id);
-    const game = await db.getGame(player?.roomId ?? '');
-    if (!game.chooser)
-        throw new Error(`Invalid state: rewarding points to chooser for game ${game.roomId} which has no chooser`);
-    if (player.socketId === game.chooser.socketId)
-        throw new Error(`Invalid state: player ${socket.id} is a guesser and chooser in game ${game.roomId}`);
-    if (player.guessResultHistory.length <= 1)
-        return; // No points for chooser if player guessed on first try
-    const maxGuesses = 5 * (Object.keys(game.playerList).length - 1);
-    const pointsPerGuess = GameParameters.MAX_CHOOSER_POINTS / maxGuesses;
-    game.chooser.score += pointsPerGuess;
-    await db.updatePlayer(game.chooser);
-}
 async function checkPlayerLastGuess(socket) {
     const player = await db.getPlayer(socket.id);
     if (player.guessResultHistory.length >= GameParameters.MAX_NUM_GUESSES) {
@@ -235,19 +238,10 @@ async function checkPlayerLastGuess(socket) {
         await db.updatePlayer(player);
     }
 }
-async function onStartOver(socket) {
-    const player = await db.getPlayer(socket.id);
-    const game = await db.getGame(player.roomId);
-    for (const player of Object.values(game.playerList)) {
-        player.score = 0;
-        await db.updatePlayer(player);
+async function startNextRoundIfReady(roomId) {
+    if (await allPlayersHaveSolved(roomId)) {
+        await resetForNewRound(roomId);
+        // Timeout for players to see their results
+        await new Promise((resolve) => setTimeout(resolve, 3000));
     }
-    await db.resetChoosersForNewGame(game.roomId);
-    await resetForNewRound(game.roomId);
-    await emitUpdatedGameState(game.roomId);
-}
-async function onRequestValidWord(callback) {
-    const validator = new FileWordValidator(ALLOWED_ANSWERS_PATH);
-    const validWord = await validator.getRandomValidWord();
-    callback(validWord);
 }

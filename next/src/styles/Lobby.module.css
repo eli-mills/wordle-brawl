@@ -1,0 +1,48 @@
+.main {
+    display: flex;
+    flex-direction: column;
+    justify-content: top;
+    align-items: center;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.main h1 {
+    font-size: 3rem;
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.main > button {
+    background-color: green;
+}
+
+.main > button:disabled {
+    background-color: grey;
+    font-style: italic;
+    color: green;
+}
+
+@media (hover: hover) {
+    .main > button:hover:enabled {
+        background-color: lightgreen;
+        color: black;
+    }
+}
+
+.main button {
+    font-size: 1.5rem;
+    margin: 1rem 0;
+    padding: 0.2rem 1rem;
+}
+
+
+@media (min-width: 1200px) {
+    .main {
+        justify-content: space-around;
+    }
+
+    .main h1 {
+        font-size: 4rem;
+    }
+}

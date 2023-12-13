@@ -1,5 +1,5 @@
 import { createClient } from 'redis'
-import { Result, Player, Game } from '../../common'
+import { Result, Player, Game, GameParameters, gameCanStart } from '../../common/dist/index.js'
 
 type EmptyObject = Record<string, never>
 type RedisBool = 'true' | 'false'
@@ -27,10 +27,7 @@ export async function initializeDbConn(): Promise<void> {
  *                                              *
  ************************************************/
 
-type DbPlayer = Omit<
-    Player,
-    'guessResultHistory' | 'finished' | 'score'
-> & {
+type DbPlayer = Omit<Player, 'guessResultHistory' | 'finished' | 'score'> & {
     finished: RedisBool
     score: string
 }
@@ -311,10 +308,12 @@ async function populateAvailableRoomIds(): Promise<void> {
         return
     }
     console.log('Populating rooms')
+    const roomIds = [];
     for (let i: number = 0; i < 10000; i++) {
         const roomId: string = i.toString().padStart(4, '0')
-        await redisClient.sAdd(AVAILABLE_ROOM_IDS, roomId)
+        roomIds.push(roomId);
     }
+    await redisClient.sAdd(AVAILABLE_ROOM_IDS, roomIds)
 }
 
 /************************************************
@@ -584,6 +583,7 @@ async function removePlayerFromList(
     if (!gameIsEmpty) {
         await replaceLeaderIfRemoved(socketId, roomId)
     }
+    await setGameOverIfGameInvalid(roomId)
 }
 
 async function deletePlayerList(roomId: string): Promise<void> {
@@ -595,6 +595,16 @@ async function deletePlayerList(roomId: string): Promise<void> {
         console.error(`DB error when deleting playerList ${roomId}`)
         throw err
     }
+}
+
+async function setGameOverIfGameInvalid(roomId: string): Promise<void> {
+    if (!await gameExists(roomId)) return;
+    const game = await getGame(roomId)
+    if (gameCanStart(game) || game.status === "lobby") return;
+
+    console.log(`Game ${roomId} is no longer playable, changing to end state.`)
+    game.status = "end"
+    await updateGame(game)
 }
 
 /**
@@ -618,28 +628,51 @@ async function replaceLeaderIfRemoved(
 ): Promise<void> {
     const game = await getGame(roomId)
 
-    if (removedSocketId !== game.leader.socketId) return
-
-    // Leader deleted, replace leader
-    console.log(
-        `Player ${game.leader.socketId} was the leader, need replacement.`
-    )
-    const playerList = await getPlayerList(roomId)
-
-    if (Object.keys(playerList).length === 0) {
-        throw new Error(
-            `Invalid state: replaceLeader called on game ${roomId} with empty playerList`
+    if (removedSocketId === game.leader.socketId) {
+        // Leader deleted, replace leader
+        console.log(
+            `Player ${game.leader.socketId} was the leader, need replacement.`
         )
+        const playerList = await getPlayerList(roomId)
+
+        if (Object.keys(playerList).length === 0) {
+            throw new Error(
+                `Invalid state: replaceLeader called on game ${roomId} with empty playerList`
+            )
+        }
+
+        game.leader = playerList[Object.keys(playerList)[0]]
     }
 
-    game.leader = playerList[Object.keys(playerList)[0]]
+    // Check if chooser was removed
+    if (removedSocketId === game.chooser?.socketId) {
+        console.log(
+            `Player ${game.chooser.socketId} was the chooser, need replacement.`
+        )
+        if (Object.keys(game.playerList).length < GameParameters.MIN_PLAYERS) {
+            game.status = 'end'
+            game.chooser = null
+        } else if (game.status === 'playing') {
+            game.chooser = null
+        } else if (game.status === 'choosing') {
+            const nextChooser = await getRandomChooserFromList(roomId)
+            if (!nextChooser) {
+                console.log(`No choosers left for game ${roomId}`)
+                game.status = 'end'
+            } else {
+                game.chooser = nextChooser
+            }
+        }
+    }
     await updateGame(game)
 }
 
 export async function resetChoosersForNewGame(roomId: string): Promise<void> {
     let chooserIdList: string[]
     try {
-        chooserIdList = await redisClient.sMembers(getRedisChooserListKey(roomId))
+        chooserIdList = await redisClient.sMembers(
+            getRedisChooserListKey(roomId)
+        )
     } catch (err) {
         console.error(`DB error when retrieving chooserList ${roomId}`)
         throw err

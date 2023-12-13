@@ -1,0 +1,48 @@
+.playerListContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 80%;
+}
+
+.playerList {
+    width: 100%;
+    border: 1px solid white;
+    font-size: 1em;
+    padding: .5rem;
+    margin: 0;
+    margin-bottom: 2rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.playerList li {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    word-break: keep-all;
+    margin: .5rem;
+    padding: .2rem .5rem;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.playerListContainer h2 {
+    margin: 0;
+    align-self: flex-start;
+}
+
+@media (min-width: 1200px) {
+    .playerListContainer {
+        width: 40%;
+        font-size: 1.4rem;
+    }
+    .playerListContainer h2 {
+        font-size: 2rem;
+    }
+
+}

@@ -1,0 +1,62 @@
+.main {
+    background-color: #555555;
+    width: 15rem;
+    height: 90dvh;
+    position: absolute;
+    top: 0;
+    right: 0;
+    overflow: hidden;
+    overflow-y: auto;
+    border: 1px solid white;
+}
+
+.hideOpponentPanelButton {
+    margin: 1rem;
+}
+
+.hideOpponentPanelButton,
+.showOpponentPanelButton {
+    font-size: 2em;
+}
+
+/* Large screens */
+@media (min-width: 1200px) {
+    .main {
+        width: 20rem;
+        position: static;
+    }
+
+    .hideOpponentPanelButton,
+    .showOpponentPanelButton {
+        display: none;
+    }
+}
+
+/* Small screens */
+@media (max-width: 1199px) {
+    .minimized {
+        position: absolute;
+        top: 5rem;
+        width: 2.5rem;
+        height: 5rem;
+        border-right: none;
+        border-radius: 0.5rem 0 0 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .showOpponentPanelButton {
+        display: none;
+    }
+
+    .minimized .hideOpponentPanelButton,
+    .minimized .opponentCardList {
+        display: none;
+    }
+
+    .minimized .showOpponentPanelButton {
+        display: inline;
+        margin: 0.5rem;
+    }
+}

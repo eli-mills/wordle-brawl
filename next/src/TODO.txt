@@ -1,2 +1,0 @@
-[ ]     Keyboard should only be colored in hierarchy: yellow overwrites grey, green overwrites yellow.
-[ ]     Add full list of 5-letter words for guessing, use valid words only for the one picking the word

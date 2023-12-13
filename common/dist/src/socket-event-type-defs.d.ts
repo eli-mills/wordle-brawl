@@ -9,18 +9,21 @@ export interface ServerToClientEvents {
     [GameEvents.BEGIN_GAME]: () => void;
 }
 export interface ClientToServerEvents {
-    [GameEvents.DECLARE_NAME]: (playerName: string, callback: (result: {
-        accepted: boolean;
-        duplicate: boolean;
-    }) => void) => void;
+    [GameEvents.DECLARE_NAME]: (playerName: string, callback: (result: DeclareNameResponse) => void) => void;
     [GameEvents.GUESS]: (guess: string) => void;
-    [GameEvents.REQUEST_NEW_GAME]: () => void;
+    [GameEvents.REQUEST_NEW_GAME]: (callback: (response: NewGameRequestResponse) => void) => void;
     [GameEvents.REQUEST_JOIN_GAME]: (room: string, callback: (response: JoinRequestResponse) => void) => void;
     [GameEvents.REQUEST_BEGIN_GAME]: () => void;
     [GameEvents.CHECK_CHOSEN_WORD_VALID]: (word: string, callback: (isValid: boolean) => void) => void;
     [GameEvents.CHOOSE_WORD]: (word: string) => void;
     [GameEvents.START_OVER]: () => void;
     [GameEvents.REQUEST_VALID_WORD]: (callback: (validWord: string) => void) => void;
+    [GameEvents.SAY_HELLO]: (callback: () => void) => void;
 }
 export type JoinRequestResponse = "OK" | "DNE" | "MAX";
+export type DeclareNameResponse = "OK" | "DUP" | "EMPTY";
+export type NewGameRequestResponse = {
+    roomsAvailable: boolean;
+    roomId: string;
+};
 //# sourceMappingURL=socket-event-type-defs.d.ts.map

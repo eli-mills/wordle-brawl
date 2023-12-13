@@ -10,6 +10,12 @@ export type EvaluationResponseData = {
     accepted: boolean;
     correct: boolean;
 };
+export type PlayerRoundResults = {
+    efficiencyPoints: number;
+    speedBonus: boolean;
+    numberOfGuesses: number;
+};
+export type RoundResults = Record<string, PlayerRoundResults>;
 /************************************************
  *                                              *
  *                    MODELS                    *

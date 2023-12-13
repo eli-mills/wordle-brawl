@@ -11,12 +11,6 @@
         "rootDir": "./src",
         "outDir": "./dist",
       },
-    // "files": [
-    //     "./src/server.ts",
-    //     "./src/socket.ts",
-    //     "./src/evaluation.ts",
-    //     "./src/db.ts"
-    // ],
     "references": [
         { "path":  "../common"}
     ]

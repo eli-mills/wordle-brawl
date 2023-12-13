@@ -8,6 +8,7 @@ export const CHECK_CHOSEN_WORD_VALID = "check-chosen-word-valid";
 export const CHOOSE_WORD = "choose-word";
 export const START_OVER = "start-over";
 export const REQUEST_VALID_WORD = "request-valid-word";
+export const SAY_HELLO = "say-hello";
 // Server to client
 export const EVALUATION = "evaluation";
 export const UPDATE_GAME_STATE = "update-game-state";
