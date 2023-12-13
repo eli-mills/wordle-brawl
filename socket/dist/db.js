@@ -102,7 +102,7 @@ function getRedisGameKey(roomId) {
     return `game:${roomId}`;
 }
 /**
- * Creates a new Player entry in the DB.
+ * Creates a new Game entry in the DB.
  *
  * @param socketId : ID of the socket connection used by the player
  * @returns : new Game's roomId, or null if no rooms available
