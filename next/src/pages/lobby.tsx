@@ -62,22 +62,18 @@ function handleRoomQuery(
         case GameEvents.REQUEST_NEW_GAME:
             socket
                 .timeout(3000)
-                .emit(
-                    GameEvents.REQUEST_NEW_GAME,
-                    (err, response) => {
-                        if (err) {
-                            console.log('Timeout on REQUEST_NEW_GAME, emitting again')
-                            socket.emit(
-                                GameEvents.REQUEST_NEW_GAME,
-                                (response) => {
-                                    handleNewGameResponse(response, router)
-                                }
-                            )
-                        } else {
+                .emit(GameEvents.REQUEST_NEW_GAME, (err, response) => {
+                    if (err) {
+                        console.log(
+                            'Timeout on REQUEST_NEW_GAME, emitting again'
+                        )
+                        socket.emit(GameEvents.REQUEST_NEW_GAME, (response) => {
                             handleNewGameResponse(response, router)
-                        }
+                        })
+                    } else {
+                        handleNewGameResponse(response, router)
                     }
-                )
+                })
 
             break
         case '':
@@ -94,15 +90,20 @@ function handleRoomQuery(
             socket
                 .timeout(3000)
                 .emit(GameEvents.REQUEST_JOIN_GAME, room, (err, response) => {
-
                     if (err) {
-                        console.log("Timeout on REQUEST_JOIN_GAME, emitting again")
-                        socket.emit(GameEvents.REQUEST_JOIN_GAME, room, response => handleJoinGameResponse(response, router))
+                        console.log(
+                            'Timeout on REQUEST_JOIN_GAME, emitting again'
+                        )
+                        socket.emit(
+                            GameEvents.REQUEST_JOIN_GAME,
+                            room,
+                            (response) =>
+                                handleJoinGameResponse(response, router)
+                        )
                     } else {
                         handleJoinGameResponse(response, router)
                     }
-                }
-                )
+                })
     }
 }
 
@@ -168,7 +169,8 @@ export default function LobbyPage() {
                     <GameStartButton />
                 </main>
             ) : (
-                <LoadingIcon />
+                    <LoadingIcon />
+
             )}
         </>
     )
