@@ -191,7 +191,7 @@ async function onGuess(socket: Socket, guess: string): Promise<void> {
     result.resultByPosition &&
         (await db.createGuessResult(player.socketId, result.resultByPosition))
 
-    if (result.accepted) {
+    if (result.accepted && !result.correct) {
         await rewardPointsToChooser(socket)
     }
 

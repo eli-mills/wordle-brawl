@@ -49,9 +49,7 @@ export async function rewardPointsToChooser(socket: Socket): Promise<void> {
             `Invalid state: player ${socket.id} is a guesser and chooser in game ${game.roomId}`
         )
 
-    if (player.guessResultHistory.length <= 1) return // No points for chooser if player guessed on first try
-
-    const maxGuesses = 5 * (Object.keys(game.playerList).length - 1)
+    const maxGuesses = 6 * (Object.keys(game.playerList).length - 1)
     const pointsPerGuess = GameParameters.MAX_CHOOSER_POINTS / maxGuesses
     game.chooser.score += pointsPerGuess
 
