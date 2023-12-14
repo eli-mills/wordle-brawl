@@ -1,7 +1,15 @@
-.loadingIcon {
-    height: 100vh;
+.loadingContainer {
+    height: 90dvh;
     width: 100vw;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-direction: column;
+}
+
+.loadingMessage {
+    font-style: italic;
+    text-align: center;
+    font-size: 1.5rem;
+    max-width: 25rem;
 }

@@ -10,7 +10,8 @@ export default function Key({letter}: KeyProps) {
         const keyUpEvent = new KeyboardEvent("keyup", {key: letter});
         const key = document.getElementById(`key${letter}`);
 
-        key?.addEventListener("mouseup", (e)=>{
+        key?.addEventListener("mouseup", (e) => {
+            e.preventDefault();
             console.log("clicked");
             window.dispatchEvent(keyUpEvent);
         });

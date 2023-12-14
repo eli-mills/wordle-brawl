@@ -8,7 +8,7 @@ export default function ChoosingPanel() {
     const [chosenWord, setChosenWord] = useState('')
     const [wordIsValid, setWordIsValid] = useState(false)
 
-    useEffect(() => {
+    const checkValidityOnWordChange = (): void => {
         if (chosenWord.length === 5) {
             socket?.emit(
                 GameEvents.CHECK_CHOSEN_WORD_VALID,
@@ -20,9 +20,9 @@ export default function ChoosingPanel() {
         } else {
             setWordIsValid(false)
         }
-    }, [chosenWord, socket])
+    }
 
-    function onWordChange(e: React.ChangeEvent<HTMLInputElement>): void {
+    const onWordChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
         const newWordUpper = e.target.value.toUpperCase()
         e.target.value = newWordUpper
         setChosenWord(newWordUpper)
@@ -40,6 +40,8 @@ export default function ChoosingPanel() {
             setChosenWord(validWord.toUpperCase())
         })
     }
+
+    useEffect(checkValidityOnWordChange, [chosenWord, socket])
 
     return (
         <form
