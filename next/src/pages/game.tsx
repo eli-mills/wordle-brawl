@@ -1,11 +1,9 @@
-import Head from 'next/head'
 import GamePanel from '@/components/GamePanel'
 import OpponentPanel from '@/components/OpponentPanel'
 import ChoosingPanel from '@/components/ChoosingPanel'
 import GameOverPanel from '@/components/GameOverPanel'
 import { GlobalContext } from './_app'
 import { useContext } from 'react'
-import PlayerName from '@/components/PlayerName'
 import styles from '@/styles/Game.module.css'
 
 export default function GamePage() {

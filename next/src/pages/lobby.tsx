@@ -1,4 +1,3 @@
-import Head from 'next/head'
 import { useRouter, NextRouter } from 'next/router'
 import { GlobalContext } from './_app'
 import { useEffect, useContext, useState } from 'react'
@@ -108,7 +107,7 @@ function handleRoomQuery(
 }
 
 export default function LobbyPage() {
-    const { socket, setSocket, player, game } = useContext(GlobalContext)
+    const { socket, setSocket, game } = useContext(GlobalContext)
     const router = useRouter()
     const { room } = router.query
     const [displayNameForm, setDisplayNameForm] = useState(true)

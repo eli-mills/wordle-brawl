@@ -1,4 +1,3 @@
-import Head from 'next/head'
 import { useState, useContext, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { GlobalContext } from './_app'
