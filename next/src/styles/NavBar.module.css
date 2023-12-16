@@ -30,6 +30,10 @@
     display: none;
 }
 
+.navBarLink {
+    cursor: pointer;
+}
+
 @media (min-width: 1200px) {
     .navBar {
         padding-left: 2rem;
