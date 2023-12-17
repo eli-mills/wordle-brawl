@@ -29,7 +29,7 @@ export default function HomePage() {
     return (
         <>
             <main className={style.main}>
-                <h1> Wordle With Friends </h1>
+                <h1> Wordle Brawl </h1>
                 <form className={style.roomForm} onSubmit={onSubmit}>
                     <div>
                         <input

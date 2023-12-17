@@ -11,12 +11,20 @@ export default function ModalOverlay({
     setShowModal,
 }: ModalOverlayProps) {
     return (
-        <div className={styles.modalBackground} onClick={()=>setShowModal(false)}>
-            <div className={styles.modalOverlay}>
-                <RxCross1
+        <div
+            className={styles.modalBackground}
+            onClick={(e) => {
+                e.stopPropagation()
+                setShowModal(false)
+            }}
+        >
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+                <span
                     className={styles.closeModal}
                     onClick={() => setShowModal(false)}
-                />
+                >
+                    <RxCross1 />
+                </span>
                 {children}
                 <button onClick={() => setShowModal(false)}> Close </button>
             </div>

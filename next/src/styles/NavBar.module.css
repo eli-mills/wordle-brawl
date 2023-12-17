@@ -34,6 +34,67 @@
     cursor: pointer;
 }
 
+.modalBackground {
+    background-color: rgba(50, 50, 50, .8);
+    position: absolute;
+    top: 0;
+    height: 100dvh;
+    width: 100dvw;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal {
+    /* Dimensions */
+    width: 75%;
+    height: 75%;
+    margin-top: 2rem;
+    padding: 1rem;
+
+    /* Appearance */
+    border: 2px solid white;
+    background-color: black;
+
+    /* Flex */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    
+    /* Content */
+    font-size: 1.2rem;
+    overflow-y: scroll;
+    line-height: 1.5rem;
+}
+
+.modal h1 {
+    margin: 0 0 2rem 0;
+    text-align: center;
+    display: block;
+}
+
+.modal button {
+    width: 5rem;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.modal ol {
+    padding-left: 2rem;
+}
+
+.modal li {
+    margin-bottom: 1.5rem;
+}
+
+.closeModal {
+    cursor: pointer;
+    font-size: 1rem;
+    align-self: flex-start;
+}
+
 @media (min-width: 1200px) {
     .navBar {
         padding-left: 2rem;
