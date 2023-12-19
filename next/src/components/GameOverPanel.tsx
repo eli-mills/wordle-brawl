@@ -31,11 +31,17 @@ export default function GameOverPanel() {
                 )}
             <ol className={styles.playerStatsContainer}>
                 {game &&
-                    Object.values(game.playerList).sort((a,b) => b.score - a.score).map((player, key) => (
-                        <li key={ key}>
-                            <PlayerName {...player} />
-                        </li>
-                    ))}
+                    Object.values(game.playerList)
+                        .sort((a, b) => b.score - a.score)
+                        .map((player, key) => (
+                            <>
+                                {player.name && (
+                                    <li key={key}>
+                                        <PlayerName {...player} />
+                                    </li>
+                                )}
+                            </>
+                        ))}
             </ol>
         </div>
     )
