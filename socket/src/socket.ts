@@ -225,17 +225,10 @@ async function onBeginGameRequest(
     if (socket.id !== game.leader.socketId) return // Requestor is not the game leader
     if (!gameCanStart(game)) return
 
-    const chooser = await db.getRandomChooserFromList(player.roomId)
-    if (!chooser)
-        throw new Error(
-            `Invalid state: game ${game.roomId} starting without any available choosers.`
-        )
-    game.status = 'choosing'
-    game.chooser = chooser
-    await db.updateGame(game)
-
     io.to(player.roomId).emit(GameEvents.BEGIN_GAME)
-    await emitUpdatedGameState(player.roomId)
+    
+    await resetForNewRound(game.roomId);
+    await emitUpdatedGameState(game.roomId)
 }
 
 async function onCheckChosenWordValid(
@@ -295,6 +288,7 @@ async function emitUpdatedGameState(roomId: string): Promise<void> {
     if (!(await db.gameExists(roomId))) return
     const gameStateData = await db.getGame(roomId)
     console.log(`Sending gameStateData to room ${roomId}`)
+    console.log(`playerlist ${roomId} is ${JSON.stringify(Object.values(gameStateData.playerList).map(player => player.name))}`)
     io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData)
 }
 
