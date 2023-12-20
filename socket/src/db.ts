@@ -1,5 +1,11 @@
 import { createClient } from 'redis'
-import { Result, Player, Game, GameParameters, gameCanStart } from '../../common/dist/index.js'
+import {
+    Result,
+    Player,
+    Game,
+    GameParameters,
+    gameCanStart,
+} from '../../common/dist/index.js'
 
 type EmptyObject = Record<string, never>
 type RedisBool = 'true' | 'false'
@@ -43,7 +49,7 @@ export async function createPlayer(socketId: string): Promise<void> {
         roomId: '',
         name: '',
         score: '0',
-        finished: 'false',
+        finished: 'true',
     }
 
     try {
@@ -138,9 +144,13 @@ function getRedisPlayerKey(socketId: string): string {
  *                                              *
  ************************************************/
 
-type DbGame = Omit<Game, 'playerList' | 'leader' | 'chooser'> & {
+type DbGame = Omit<
+    Game,
+    'playerList' | 'leader' | 'chooser' | 'roundChooserPoints'
+> & {
     leader: string
     chooser: string
+    roundChooserPoints: string
 }
 
 function getRedisGameKey(roomId: string): string {
@@ -163,7 +173,7 @@ export async function createGame(socketId: string): Promise<string> {
         status: 'lobby',
         chooser: '',
         currentAnswer: '',
-        roundChooserPoints: 0
+        roundChooserPoints: '0',
     }
 
     try {
@@ -211,6 +221,7 @@ export async function getGame(roomId: string): Promise<Game> {
         leader,
         playerList,
         chooser,
+        roundChooserPoints: Number.parseInt(game.roundChooserPoints),
     }
 }
 
@@ -222,6 +233,7 @@ function convertGameToDbGame(game: Game): DbGame {
         ...gameSansPlayerList,
         chooser: game.chooser?.socketId ?? '',
         leader: game.leader.socketId,
+        roundChooserPoints: `${game.roundChooserPoints}`,
     }
 }
 
@@ -309,10 +321,10 @@ async function populateAvailableRoomIds(): Promise<void> {
         return
     }
     console.log('Populating rooms')
-    const roomIds = [];
+    const roomIds = []
     for (let i: number = 0; i < 10000; i++) {
         const roomId: string = i.toString().padStart(4, '0')
-        roomIds.push(roomId);
+        roomIds.push(roomId)
     }
     await redisClient.sAdd(AVAILABLE_ROOM_IDS, roomIds)
 }
@@ -599,12 +611,12 @@ async function deletePlayerList(roomId: string): Promise<void> {
 }
 
 async function setGameOverIfGameInvalid(roomId: string): Promise<void> {
-    if (!await gameExists(roomId)) return;
+    if (!(await gameExists(roomId))) return
     const game = await getGame(roomId)
-    if (gameCanStart(game) || game.status === "lobby") return;
+    if (gameCanStart(game) || game.status === 'lobby') return
 
     console.log(`Game ${roomId} is no longer playable, changing to end state.`)
-    game.status = "end"
+    game.status = 'end'
     await updateGame(game)
 }
 

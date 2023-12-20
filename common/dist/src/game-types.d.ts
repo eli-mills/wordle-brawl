@@ -29,6 +29,7 @@ export type Game = {
     status: GameStatus;
     chooser: Player | null;
     currentAnswer: string;
+    roundChooserPoints: number;
 };
 export type Player = {
     socketId: string;
