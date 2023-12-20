@@ -163,6 +163,7 @@ export async function createGame(socketId: string): Promise<string> {
         status: 'lobby',
         chooser: '',
         currentAnswer: '',
+        roundChooserPoints: 0
     }
 
     try {

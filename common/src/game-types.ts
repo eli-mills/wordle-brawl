@@ -13,12 +13,12 @@ export type EvaluationResponseData = {
 };
 
 export type PlayerRoundResults = {
-    efficiencyPoints: number,
-    speedBonus: boolean,
-    numberOfGuesses: number
-}
+  efficiencyPoints: number;
+  speedBonus: boolean;
+  numberOfGuesses: number;
+};
 
-export type RoundResults = Record<string, PlayerRoundResults>
+export type RoundResults = Record<string, PlayerRoundResults>;
 
 /************************************************
  *                                              *
@@ -34,6 +34,7 @@ export type Game = {
   status: GameStatus;
   chooser: Player | null;
   currentAnswer: string;
+  roundChooserPoints: number;
 };
 
 export type Player = {
