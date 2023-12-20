@@ -21,7 +21,7 @@ export async function rewardPointsToPlayer(socket: Socket): Promise<void> {
 
     // Add speed bonus
     const game = await db.getGame(player.roomId)
-    if (Object.keys(game.playerList).length > 2) {
+    if (game.roundStartPlayers > 2) {
         const firstSolver = await db.getFirstSolver(player.roomId)
         if (firstSolver.socketId === player.socketId) {
             player.score += GameParameters.SPEED_BONUS
@@ -49,7 +49,7 @@ export async function rewardPointsToChooser(socket: Socket): Promise<void> {
             `Invalid state: player ${socket.id} is a guesser and chooser in game ${game.roomId}`
         )
 
-    game.chooser.score += game.roundChooserPoints
+    game.chooser.score += calculateRoundChooserPoints(game.roundStartPlayers)
 
     await db.updatePlayer(game.chooser)
 }

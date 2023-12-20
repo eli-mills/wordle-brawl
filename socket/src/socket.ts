@@ -12,11 +12,7 @@ import {
     gameCanStart,
 } from '../../common/dist/index.js'
 import { evaluateGuess, FileWordValidator } from './evaluation.js'
-import {
-    rewardPointsToChooser,
-    rewardPointsToPlayer,
-    calculateRoundChooserPoints,
-} from './reward-points.js'
+import { rewardPointsToChooser, rewardPointsToPlayer } from './reward-points.js'
 
 /************************************************
  *                                              *
@@ -336,7 +332,7 @@ async function resetForNewRound(roomId: string): Promise<void> {
     if (chooser) {
         game.status = 'choosing'
         game.chooser = chooser
-        game.roundChooserPoints = calculateRoundChooserPoints(Object.keys(game.playerList).length)
+        game.roundStartPlayers = Object.keys(game.playerList).length
     } else {
         game.status = 'end'
     }

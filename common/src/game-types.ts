@@ -34,7 +34,7 @@ export type Game = {
   status: GameStatus;
   chooser: Player | null;
   currentAnswer: string;
-  roundChooserPoints: number;
+  roundStartPlayers: number;
 };
 
 export type Player = {
