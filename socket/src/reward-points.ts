@@ -1,6 +1,6 @@
-import { Socket } from "socket.io"
+import { Socket } from 'socket.io'
 import { GameParameters } from '../../common/dist/index.js'
-import * as db from "./db.js"
+import * as db from './db.js'
 
 /**
  * Adds points to given Player and saves to DB.
@@ -38,7 +38,7 @@ export async function rewardPointsToPlayer(socket: Socket): Promise<void> {
  */
 export async function rewardPointsToChooser(socket: Socket): Promise<void> {
     const player = await db.getPlayer(socket.id)
-    const game = await db.getGame(player?.roomId ?? '')
+    const game = await db.getGame(player.roomId)
 
     if (!game.chooser)
         throw new Error(
@@ -49,9 +49,12 @@ export async function rewardPointsToChooser(socket: Socket): Promise<void> {
             `Invalid state: player ${socket.id} is a guesser and chooser in game ${game.roomId}`
         )
 
-    const maxGuesses = 6 * (Object.keys(game.playerList).length - 1)
-    const pointsPerGuess = GameParameters.MAX_CHOOSER_POINTS / maxGuesses
-    game.chooser.score += pointsPerGuess
+    game.chooser.score += game.roundChooserPoints
 
     await db.updatePlayer(game.chooser)
+}
+
+export function calculateRoundChooserPoints(playerListLength: number): number {
+    const maxGuesses = 6 * (playerListLength - 1)
+    return GameParameters.MAX_CHOOSER_POINTS / maxGuesses
 }

@@ -11,11 +11,12 @@ import {
     NewGameRequestResponse,
     gameCanStart,
 } from '../../common/dist/index.js'
+import { evaluateGuess, FileWordValidator } from './evaluation.js'
 import {
-    evaluateGuess,
-    FileWordValidator,
-} from './evaluation.js'
-import { rewardPointsToChooser, rewardPointsToPlayer } from './reward-points.js'
+    rewardPointsToChooser,
+    rewardPointsToPlayer,
+    calculateRoundChooserPoints,
+} from './reward-points.js'
 
 /************************************************
  *                                              *
@@ -185,7 +186,9 @@ async function onGuess(socket: Socket, guess: string): Promise<void> {
         )
 
     // Evaluate result
-    const validator = new FileWordValidator(FileWordValidator.ALLOWED_GUESSES_PATH)
+    const validator = new FileWordValidator(
+        FileWordValidator.ALLOWED_GUESSES_PATH
+    )
     const result = await evaluateGuess(guess, player.roomId, validator)
 
     result.resultByPosition &&
@@ -226,8 +229,8 @@ async function onBeginGameRequest(
     if (!gameCanStart(game)) return
 
     io.to(player.roomId).emit(GameEvents.BEGIN_GAME)
-    
-    await resetForNewRound(game.roomId);
+
+    await resetForNewRound(game.roomId)
     await emitUpdatedGameState(game.roomId)
 }
 
@@ -273,7 +276,9 @@ async function onStartOver(socket: Socket): Promise<void> {
 async function onRequestValidWord(
     callback: (validWord: string) => void
 ): Promise<void> {
-    const validator = new FileWordValidator(FileWordValidator.ALLOWED_ANSWERS_PATH)
+    const validator = new FileWordValidator(
+        FileWordValidator.ALLOWED_ANSWERS_PATH
+    )
     const validWord = await validator.getRandomValidWord()
     callback(validWord)
 }
@@ -288,12 +293,18 @@ async function emitUpdatedGameState(roomId: string): Promise<void> {
     if (!(await db.gameExists(roomId))) return
     const gameStateData = await db.getGame(roomId)
     console.log(`Sending gameStateData to room ${roomId}`)
-    console.log(`playerlist ${roomId} is ${JSON.stringify(Object.values(gameStateData.playerList).map(player => player.name))}`)
+    console.log(
+        `playerlist ${roomId} is ${JSON.stringify(
+            Object.values(gameStateData.playerList).map((player) => player.name)
+        )}`
+    )
     io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData)
 }
 
 async function validateAnswerWord(word: string): Promise<boolean> {
-    const validator = new FileWordValidator(FileWordValidator.ALLOWED_ANSWERS_PATH)
+    const validator = new FileWordValidator(
+        FileWordValidator.ALLOWED_ANSWERS_PATH
+    )
     return await validator.validateWord(word)
 }
 
@@ -325,6 +336,7 @@ async function resetForNewRound(roomId: string): Promise<void> {
     if (chooser) {
         game.status = 'choosing'
         game.chooser = chooser
+        game.roundChooserPoints = calculateRoundChooserPoints(Object.keys(game.playerList).length)
     } else {
         game.status = 'end'
     }
