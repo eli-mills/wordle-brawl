@@ -8,7 +8,6 @@ import {
 } from '../../common/dist/index.js'
 
 type EmptyObject = Record<string, never>
-type RedisBool = 'true' | 'false'
 
 /************************************************
  *                                              *
@@ -33,8 +32,7 @@ export async function initializeDbConn(): Promise<void> {
  *                                              *
  ************************************************/
 
-type DbPlayer = Omit<Player, 'guessResultHistory' | 'finished' | 'score'> & {
-    finished: RedisBool
+type DbPlayer = Omit<Player, 'guessResultHistory' | 'score'> & {
     score: string
 }
 
@@ -49,7 +47,7 @@ export async function createPlayer(socketId: string): Promise<void> {
         roomId: '',
         name: '',
         score: '0',
-        finished: 'true',
+        status: "spectating"
     }
 
     try {
@@ -87,7 +85,6 @@ export async function getPlayer(socketId: string): Promise<Player> {
         ...(player as DbPlayer),
         score: Number.parseInt(player.score),
         guessResultHistory,
-        finished: player.finished === 'true',
     }
 }
 
@@ -97,7 +94,6 @@ function convertPlayerToDbPlayer(player: Player): DbPlayer {
 
     return {
         ...rest,
-        finished: player.finished ? 'true' : 'false',
         score: `${player.score}`,
     }
 }
@@ -558,7 +554,7 @@ export async function addPlayerToSolvedList(
 export async function resetPlayersFinished(roomId: string): Promise<void> {
     const playerList = await getPlayerList(roomId)
     for (const player of Object.values(playerList)) {
-        player.finished = false
+        player.status = "playing"
         await updatePlayer(player)
         await deleteGuessResultHistory(player.socketId)
     }

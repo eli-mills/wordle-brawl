@@ -26,6 +26,7 @@ export type RoundResults = Record<string, PlayerRoundResults>;
  *                                              *
  ************************************************/
 export type GameStatus = "lobby" | "choosing" | "playing" | "end";
+type PlayerStatus = "playing" | "spectating" | "finished";
 
 export type Game = {
   roomId: string;
@@ -43,5 +44,5 @@ export type Player = {
   name: string;
   readonly guessResultHistory: Result[][];
   score: number;
-  finished: boolean;
+  status: PlayerStatus;
 };

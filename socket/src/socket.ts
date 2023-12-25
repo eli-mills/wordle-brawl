@@ -197,7 +197,7 @@ async function onGuess(socket: Socket, guess: string): Promise<void> {
     // Handle solve
     if (result.correct) {
         await db.addPlayerToSolvedList(player.socketId, player.roomId)
-        player.finished = true
+        player.status = "finished"
         await db.updatePlayer(player)
         await rewardPointsToPlayer(socket)
     } else {
@@ -318,7 +318,7 @@ async function allPlayersHaveSolved(roomId: string): Promise<boolean> {
     return (
         Object.values(game.playerList).filter(
             (player) =>
-                player.socketId !== game.chooser?.socketId && !player.finished
+                player.socketId !== game.chooser?.socketId && player.status === "playing"
         ).length === 0
     )
 }
@@ -343,7 +343,7 @@ async function checkPlayerLastGuess(socket: Socket): Promise<void> {
     const player = await db.getPlayer(socket.id)
     if (player.guessResultHistory.length >= GameParameters.MAX_NUM_GUESSES) {
         console.log(`Player ${player.socketId} struck out!`)
-        player.finished = true
+        player.status = "finished"
         await db.updatePlayer(player)
     }
 }
