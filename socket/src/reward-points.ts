@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io'
-import { GameParameters } from '../../common/dist/index.js'
+import { GameParameters, Player } from '../../common/dist/index.js'
 import * as db from './db.js'
 
 /**
@@ -32,29 +32,54 @@ export async function rewardPointsToPlayer(socket: Socket): Promise<void> {
 }
 
 /**
- * Adds points to the current choosing Player after guess
+ * Adds points to the current choosing Player at end of round
  *
- * @param socket: the socket used by the Player currently guessing
+ * @param roomId: the roomId of the game
  */
-export async function rewardPointsToChooser(socket: Socket): Promise<void> {
-    const player = await db.getPlayer(socket.id)
-    const game = await db.getGame(player.roomId)
+export async function rewardPointsToChooser(roomId: string): Promise<void> {
+    const game = await db.getGame(roomId)
 
     if (!game.chooser)
         throw new Error(
             `Invalid state: rewarding points to chooser for game ${game.roomId} which has no chooser`
         )
-    if (player.socketId === game.chooser.socketId)
-        throw new Error(
-            `Invalid state: player ${socket.id} is a guesser and chooser in game ${game.roomId}`
-        )
-
-    game.chooser.score += calculateRoundChooserPoints(game.roundStartPlayers)
+    const eligiblePlayers = Object.values(game.playerList).filter(
+        (player) =>
+            player.socketId !== game.chooser?.socketId &&
+            player.status === 'finished'
+    )
+    const totalWrongGuesses = eligiblePlayers.reduce<number>(
+        (runningTotal, player) => {
+            return runningTotal + getNumberOfWrongGuesses(player)
+        },
+        0
+    )
+    const totalChooserPoints =
+        calculateRoundChooserPoints(eligiblePlayers.length) * totalWrongGuesses
+    console.log(`Chooser earned ${totalChooserPoints} points`)
+    console.log(
+        `Chooser new score: ${game.chooser.score} -> ${
+            game.chooser.score + totalChooserPoints
+        }`
+    )
+    game.chooser.score += totalChooserPoints
 
     await db.updatePlayer(game.chooser)
 }
 
-export function calculateRoundChooserPoints(playerListLength: number): number {
-    const maxGuesses = 6 * (playerListLength - 1)
+function getNumberOfWrongGuesses(player: Player): number {
+    if (player.status != 'finished') return 0
+    let numberOfGuesses = player.guessResultHistory.length
+    const lastGuess = player.guessResultHistory[numberOfGuesses - 1]
+
+    if (lastGuess.filter((result) => result != 'hit').length === 0) {
+        // Last guess is correct
+        numberOfGuesses--
+    }
+    return numberOfGuesses
+}
+
+function calculateRoundChooserPoints(numberEligiblePlayers: number): number {
+    const maxGuesses = GameParameters.MAX_NUM_GUESSES * (numberEligiblePlayers)
     return GameParameters.MAX_CHOOSER_POINTS / maxGuesses
 }

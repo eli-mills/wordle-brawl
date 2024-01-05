@@ -190,14 +190,10 @@ async function onGuess(socket: Socket, guess: string): Promise<void> {
     result.resultByPosition &&
         (await db.createGuessResult(player.socketId, result.resultByPosition))
 
-    if (result.accepted && !result.correct) {
-        await rewardPointsToChooser(socket)
-    }
-
     // Handle solve
     if (result.correct) {
         await db.addPlayerToSolvedList(player.socketId, player.roomId)
-        player.status = "finished"
+        player.status = 'finished'
         await db.updatePlayer(player)
         await rewardPointsToPlayer(socket)
     } else {
@@ -309,7 +305,7 @@ async function validateAnswerWord(word: string): Promise<boolean> {
  * @param roomId ID of the room the Game is being hosted in
  * @returns true if all Players have solved the current round, false if not OR if game status not playing
  */
-async function allPlayersHaveSolved(roomId: string): Promise<boolean> {
+async function allPlayersHaveFinished(roomId: string): Promise<boolean> {
     if (!(await db.gameExists(roomId))) return false
 
     const game = await db.getGame(roomId)
@@ -318,7 +314,8 @@ async function allPlayersHaveSolved(roomId: string): Promise<boolean> {
     return (
         Object.values(game.playerList).filter(
             (player) =>
-                player.socketId !== game.chooser?.socketId && player.status === "playing"
+                player.socketId !== game.chooser?.socketId &&
+                player.status === 'playing'
         ).length === 0
     )
 }
@@ -343,13 +340,15 @@ async function checkPlayerLastGuess(socket: Socket): Promise<void> {
     const player = await db.getPlayer(socket.id)
     if (player.guessResultHistory.length >= GameParameters.MAX_NUM_GUESSES) {
         console.log(`Player ${player.socketId} struck out!`)
-        player.status = "finished"
+        player.status = 'finished'
         await db.updatePlayer(player)
     }
 }
 
 async function startNextRoundIfReady(roomId: string): Promise<void> {
-    if (await allPlayersHaveSolved(roomId)) {
+    if (await allPlayersHaveFinished(roomId)) {
+        await rewardPointsToChooser(roomId)
+        await emitUpdatedGameState(roomId)
         await resetForNewRound(roomId)
 
         // Timeout for players to see their results
