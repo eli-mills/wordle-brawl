@@ -14,6 +14,7 @@ import styles from '@/styles/Lobby.module.css'
 import LoadingIcon from '@/components/LoadingIcon'
 import PlayerListPanel from '@/components/PlayerListPanel'
 import GameStartButton from '@/components/GameStartButton'
+import GameJoinButton from '@/components/GameJoinButton'
 
 function handleJoinGameResponse(
     response: JoinRequestResponse,
@@ -166,6 +167,7 @@ export default function LobbyPage() {
                         }}
                     />
                     <GameStartButton />
+                    <GameJoinButton />
                 </main>
             ) : (
                     <LoadingIcon />

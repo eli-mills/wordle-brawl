@@ -120,10 +120,6 @@ export async function evaluateGuess(
     const resultByLetter: Record<string, Result> = {}
 
     mutateIfHits(guess, answerSplit, resultByPosition, resultByLetter)
-    console.log(JSON.stringify(resultByPosition))
-    console.log(JSON.stringify(resultByLetter))
     mutateIfHas(guess, answerSplit, resultByPosition, resultByLetter)
-    console.log(JSON.stringify(resultByPosition))
-    console.log(JSON.stringify(resultByLetter))
     return { resultByPosition, resultByLetter, accepted, correct: false }
 }

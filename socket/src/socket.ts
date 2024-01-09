@@ -11,10 +11,7 @@ import {
     NewGameRequestResponse,
     gameCanStart,
 } from '../../common/dist/index.js'
-import {
-    evaluateGuess,
-    FileWordValidator,
-} from './evaluation.js'
+import { evaluateGuess, FileWordValidator } from './evaluation.js'
 import { rewardPointsToChooser, rewardPointsToPlayer } from './reward-points.js'
 
 /************************************************
@@ -185,20 +182,18 @@ async function onGuess(socket: Socket, guess: string): Promise<void> {
         )
 
     // Evaluate result
-    const validator = new FileWordValidator(FileWordValidator.ALLOWED_GUESSES_PATH)
+    const validator = new FileWordValidator(
+        FileWordValidator.ALLOWED_GUESSES_PATH
+    )
     const result = await evaluateGuess(guess, player.roomId, validator)
 
     result.resultByPosition &&
         (await db.createGuessResult(player.socketId, result.resultByPosition))
 
-    if (result.accepted && !result.correct) {
-        await rewardPointsToChooser(socket)
-    }
-
     // Handle solve
     if (result.correct) {
         await db.addPlayerToSolvedList(player.socketId, player.roomId)
-        player.finished = true
+        player.status = 'finished'
         await db.updatePlayer(player)
         await rewardPointsToPlayer(socket)
     } else {
@@ -225,17 +220,10 @@ async function onBeginGameRequest(
     if (socket.id !== game.leader.socketId) return // Requestor is not the game leader
     if (!gameCanStart(game)) return
 
-    const chooser = await db.getRandomChooserFromList(player.roomId)
-    if (!chooser)
-        throw new Error(
-            `Invalid state: game ${game.roomId} starting without any available choosers.`
-        )
-    game.status = 'choosing'
-    game.chooser = chooser
-    await db.updateGame(game)
-
     io.to(player.roomId).emit(GameEvents.BEGIN_GAME)
-    await emitUpdatedGameState(player.roomId)
+
+    await resetForNewRound(game.roomId)
+    await emitUpdatedGameState(game.roomId)
 }
 
 async function onCheckChosenWordValid(
@@ -280,7 +268,9 @@ async function onStartOver(socket: Socket): Promise<void> {
 async function onRequestValidWord(
     callback: (validWord: string) => void
 ): Promise<void> {
-    const validator = new FileWordValidator(FileWordValidator.ALLOWED_ANSWERS_PATH)
+    const validator = new FileWordValidator(
+        FileWordValidator.ALLOWED_ANSWERS_PATH
+    )
     const validWord = await validator.getRandomValidWord()
     callback(validWord)
 }
@@ -295,11 +285,18 @@ async function emitUpdatedGameState(roomId: string): Promise<void> {
     if (!(await db.gameExists(roomId))) return
     const gameStateData = await db.getGame(roomId)
     console.log(`Sending gameStateData to room ${roomId}`)
+    console.log(
+        `playerlist ${roomId} is ${JSON.stringify(
+            Object.values(gameStateData.playerList).map((player) => player.name)
+        )}`
+    )
     io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData)
 }
 
 async function validateAnswerWord(word: string): Promise<boolean> {
-    const validator = new FileWordValidator(FileWordValidator.ALLOWED_ANSWERS_PATH)
+    const validator = new FileWordValidator(
+        FileWordValidator.ALLOWED_ANSWERS_PATH
+    )
     return await validator.validateWord(word)
 }
 
@@ -308,7 +305,7 @@ async function validateAnswerWord(word: string): Promise<boolean> {
  * @param roomId ID of the room the Game is being hosted in
  * @returns true if all Players have solved the current round, false if not OR if game status not playing
  */
-async function allPlayersHaveSolved(roomId: string): Promise<boolean> {
+async function allPlayersHaveFinished(roomId: string): Promise<boolean> {
     if (!(await db.gameExists(roomId))) return false
 
     const game = await db.getGame(roomId)
@@ -317,7 +314,8 @@ async function allPlayersHaveSolved(roomId: string): Promise<boolean> {
     return (
         Object.values(game.playerList).filter(
             (player) =>
-                player.socketId !== game.chooser?.socketId && !player.finished
+                player.socketId !== game.chooser?.socketId &&
+                player.status === 'playing'
         ).length === 0
     )
 }
@@ -341,13 +339,15 @@ async function checkPlayerLastGuess(socket: Socket): Promise<void> {
     const player = await db.getPlayer(socket.id)
     if (player.guessResultHistory.length >= GameParameters.MAX_NUM_GUESSES) {
         console.log(`Player ${player.socketId} struck out!`)
-        player.finished = true
+        player.status = 'finished'
         await db.updatePlayer(player)
     }
 }
 
 async function startNextRoundIfReady(roomId: string): Promise<void> {
-    if (await allPlayersHaveSolved(roomId)) {
+    if (await allPlayersHaveFinished(roomId)) {
+        await rewardPointsToChooser(roomId)
+        await emitUpdatedGameState(roomId)
         await resetForNewRound(roomId)
 
         // Timeout for players to see their results

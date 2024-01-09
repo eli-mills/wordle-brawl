@@ -34,7 +34,7 @@ export default function OpponentPanel() {
                 {game?.playerList &&
                     Object.values(game.playerList).map(
                         (currPlayer, index) =>
-                            currPlayer.socketId !== player?.socketId && (
+                            currPlayer.socketId !== player?.socketId && currPlayer.name && (
                                 <OpponentCard key={index} player={currPlayer} />
                             )
                     )}

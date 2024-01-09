@@ -13,12 +13,12 @@ export type EvaluationResponseData = {
 };
 
 export type PlayerRoundResults = {
-    efficiencyPoints: number,
-    speedBonus: boolean,
-    numberOfGuesses: number
-}
+  efficiencyPoints: number;
+  speedBonus: boolean;
+  numberOfGuesses: number;
+};
 
-export type RoundResults = Record<string, PlayerRoundResults>
+export type RoundResults = Record<string, PlayerRoundResults>;
 
 /************************************************
  *                                              *
@@ -26,6 +26,7 @@ export type RoundResults = Record<string, PlayerRoundResults>
  *                                              *
  ************************************************/
 export type GameStatus = "lobby" | "choosing" | "playing" | "end";
+type PlayerStatus = "playing" | "finished";
 
 export type Game = {
   roomId: string;
@@ -42,5 +43,5 @@ export type Player = {
   name: string;
   readonly guessResultHistory: Result[][];
   score: number;
-  finished: boolean;
+  status: PlayerStatus;
 };
