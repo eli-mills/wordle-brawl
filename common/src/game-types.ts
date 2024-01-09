@@ -26,7 +26,7 @@ export type RoundResults = Record<string, PlayerRoundResults>;
  *                                              *
  ************************************************/
 export type GameStatus = "lobby" | "choosing" | "playing" | "end";
-type PlayerStatus = "playing" | "spectating" | "finished";
+type PlayerStatus = "playing" | "finished";
 
 export type Game = {
   roomId: string;

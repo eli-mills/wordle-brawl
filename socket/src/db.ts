@@ -47,7 +47,7 @@ export async function createPlayer(socketId: string): Promise<void> {
         roomId: '',
         name: '',
         score: '0',
-        status: "spectating"
+        status: "playing"
     }
 
     try {
