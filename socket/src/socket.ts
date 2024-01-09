@@ -329,7 +329,6 @@ async function resetForNewRound(roomId: string): Promise<void> {
     if (chooser) {
         game.status = 'choosing'
         game.chooser = chooser
-        game.roundStartPlayers = Object.keys(game.playerList).length
     } else {
         game.status = 'end'
     }

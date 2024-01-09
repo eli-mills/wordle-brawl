@@ -21,7 +21,7 @@ export async function rewardPointsToPlayer(socket: Socket): Promise<void> {
 
     // Add speed bonus
     const game = await db.getGame(player.roomId)
-    if (game.roundStartPlayers > 2) {
+    if (Object.keys(game.playerList).length > 2) {
         const firstSolver = await db.getFirstSolver(player.roomId)
         if (firstSolver.socketId === player.socketId) {
             player.score += GameParameters.SPEED_BONUS

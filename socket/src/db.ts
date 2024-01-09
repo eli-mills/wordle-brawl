@@ -142,11 +142,10 @@ function getRedisPlayerKey(socketId: string): string {
 
 type DbGame = Omit<
     Game,
-    'playerList' | 'leader' | 'chooser' | 'roundStartPlayers'
+    'playerList' | 'leader' | 'chooser'
 > & {
     leader: string
     chooser: string
-    roundStartPlayers: string
 }
 
 function getRedisGameKey(roomId: string): string {
@@ -169,7 +168,6 @@ export async function createGame(socketId: string): Promise<string> {
         status: 'lobby',
         chooser: '',
         currentAnswer: '',
-        roundStartPlayers: '1',
     }
 
     try {
@@ -217,7 +215,6 @@ export async function getGame(roomId: string): Promise<Game> {
         leader,
         playerList,
         chooser,
-        roundStartPlayers: Number.parseInt(game.roundStartPlayers),
     }
 }
 
@@ -229,7 +226,6 @@ function convertGameToDbGame(game: Game): DbGame {
         ...gameSansPlayerList,
         chooser: game.chooser?.socketId ?? '',
         leader: game.leader.socketId,
-        roundStartPlayers: `${game.roundStartPlayers}`,
     }
 }
 
