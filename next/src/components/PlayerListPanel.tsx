@@ -6,7 +6,9 @@ import styles from '@/styles/PlayerListPanel.module.css'
 export default function PlayerListPanel() {
     const { game, player } = useContext(GlobalContext)
     const playerListLength = game ? Object.keys(game.playerList).length : 0
-    const namedPlayers = game ? Object.values(game.playerList).filter(player => player.name).length : 0
+    const namedPlayers = game
+        ? Object.values(game.playerList).filter((player) => player.name).length
+        : 0
     return (
         <div className={styles.playerListContainer}>
             <h2>
@@ -16,6 +18,7 @@ export default function PlayerListPanel() {
                 {game &&
                     Object.values(game.playerList)
                         .filter((currPlayer) => currPlayer.name)
+                        .sort((a, b) => a.createdTimestamp - b.createdTimestamp)
                         .map((currPlayer, index) => (
                             <li
                                 key={index}

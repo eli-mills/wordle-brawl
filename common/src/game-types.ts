@@ -44,4 +44,5 @@ export type Player = {
   readonly guessResultHistory: Result[][];
   score: number;
   status: PlayerStatus;
+  createdTimestamp: number;
 };

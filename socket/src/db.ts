@@ -32,8 +32,12 @@ export async function initializeDbConn(): Promise<void> {
  *                                              *
  ************************************************/
 
-type DbPlayer = Omit<Player, 'guessResultHistory' | 'score'> & {
+type DbPlayer = Omit<
+    Player,
+    'guessResultHistory' | 'score' | 'createdTimestamp'
+> & {
     score: string
+    createdTimestamp: string
 }
 
 /**
@@ -47,7 +51,8 @@ export async function createPlayer(socketId: string): Promise<void> {
         roomId: '',
         name: '',
         score: '0',
-        status: "playing"
+        status: 'playing',
+        createdTimestamp: Date.now().toString(),
     }
 
     try {
@@ -84,6 +89,7 @@ export async function getPlayer(socketId: string): Promise<Player> {
     return {
         ...(player as DbPlayer),
         score: Number.parseInt(player.score),
+        createdTimestamp: Number.parseInt(player.createdTimestamp),
         guessResultHistory,
     }
 }
@@ -95,6 +101,7 @@ function convertPlayerToDbPlayer(player: Player): DbPlayer {
     return {
         ...rest,
         score: `${player.score}`,
+        createdTimestamp: `${player.createdTimestamp}`
     }
 }
 
@@ -140,10 +147,7 @@ function getRedisPlayerKey(socketId: string): string {
  *                                              *
  ************************************************/
 
-type DbGame = Omit<
-    Game,
-    'playerList' | 'leader' | 'chooser'
-> & {
+type DbGame = Omit<Game, 'playerList' | 'leader' | 'chooser'> & {
     leader: string
     chooser: string
 }
@@ -230,7 +234,7 @@ function convertGameToDbGame(game: Game): DbGame {
 }
 
 /**
- * Updates game in DB to have given values
+ * Updates game in DB to have given values - DOES NOT UPDATE PLAYERLIST
  *
  * @param game: the Game to update with current values
  */
@@ -550,7 +554,7 @@ export async function addPlayerToSolvedList(
 export async function resetPlayersFinished(roomId: string): Promise<void> {
     const playerList = await getPlayerList(roomId)
     for (const player of Object.values(playerList)) {
-        player.status = "playing"
+        player.status = 'playing'
         await updatePlayer(player)
         await deleteGuessResultHistory(player.socketId)
     }
