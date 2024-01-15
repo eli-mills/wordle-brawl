@@ -10,6 +10,7 @@ import {
     DeclareNameResponse,
     NewGameRequestResponse,
     gameCanStart,
+    Game,
 } from '../../common/dist/index.js'
 import { evaluateGuess, FileWordValidator } from './evaluation.js'
 import { rewardPointsToChooser, rewardPointsToPlayer } from './reward-points.js'
@@ -63,6 +64,9 @@ io.on('connection', async (newSocket) => {
     newSocket.on(GameEvents.START_OVER, () => onStartOver(newSocket))
     newSocket.on(GameEvents.REQUEST_VALID_WORD, onRequestValidWord)
     newSocket.on(GameEvents.SAY_HELLO, onSayHello)
+    newSocket.on(GameEvents.REQUEST_GAME_STATE, () =>
+        onRequestGameState(newSocket)
+    )
 })
 
 /************************************************
@@ -86,7 +90,7 @@ async function onDisconnect(socket: Socket): Promise<void> {
         `Deleted player ${socket.id}, sending updated game state to room ${player.roomId}`
     )
     await startNextRoundIfReady(player.roomId)
-    await emitUpdatedGameState(player.roomId)
+    await emitGameStateToRoom(player.roomId)
 }
 
 async function onCreateGameRequest(
@@ -102,7 +106,7 @@ async function onCreateGameRequest(
     }
 
     callback({ roomsAvailable: true, roomId: newRoomId })
-    await emitUpdatedGameState(newRoomId)
+    await emitGameStateToRoom(newRoomId)
 }
 
 async function onJoinGameRequest(
@@ -134,7 +138,7 @@ async function onJoinGameRequest(
     await db.addPlayerToList(socket.id, roomId)
 
     console.log(`Player ${socket.id} successfully joined room ${roomId}`)
-    await emitUpdatedGameState(roomId)
+    await emitGameStateToRoom(roomId)
     return callback('OK')
 }
 
@@ -170,7 +174,11 @@ async function onDeclareName(
 
     // Response
     callback('OK')
-    await emitUpdatedGameState(player.roomId)
+    await emitGameStateToRoom(player.roomId)
+}
+
+async function onRequestGameState(socket: Socket): Promise<void> {
+    await emitGameStateToPlayer(socket)
 }
 
 async function onGuess(socket: Socket, guess: string): Promise<void> {
@@ -203,11 +211,11 @@ async function onGuess(socket: Socket, guess: string): Promise<void> {
     // Send state
     console.log('Sending results')
     socket.emit(GameEvents.EVALUATION, result)
-    await emitUpdatedGameState(player.roomId)
+    await emitGameStateToRoom(player.roomId)
 
     // Handle new round
     await startNextRoundIfReady(player.roomId)
-    await emitUpdatedGameState(player.roomId)
+    await emitGameStateToRoom(player.roomId)
 }
 
 async function onBeginGameRequest(
@@ -223,7 +231,7 @@ async function onBeginGameRequest(
     io.to(player.roomId).emit(GameEvents.BEGIN_GAME)
 
     await resetForNewRound(game.roomId)
-    await emitUpdatedGameState(game.roomId)
+    //await emitUpdatedGameState(game.roomId)
 }
 
 async function onCheckChosenWordValid(
@@ -248,7 +256,7 @@ async function onChooseWord(socket: Socket, word: string): Promise<void> {
     game.status = 'playing'
     game.currentAnswer = word
     await db.updateGame(game)
-    await emitUpdatedGameState(player.roomId)
+    await emitGameStateToRoom(player.roomId)
 }
 
 async function onStartOver(socket: Socket): Promise<void> {
@@ -262,7 +270,7 @@ async function onStartOver(socket: Socket): Promise<void> {
 
     await db.resetChoosersForNewGame(game.roomId)
     await resetForNewRound(game.roomId)
-    await emitUpdatedGameState(game.roomId)
+    await emitGameStateToRoom(game.roomId)
 }
 
 async function onRequestValidWord(
@@ -281,9 +289,9 @@ async function onRequestValidWord(
  *                                              *
  ************************************************/
 
-async function emitUpdatedGameState(roomId: string): Promise<void> {
-    if (!(await db.gameExists(roomId))) return
-    const gameStateData = await db.getGame(roomId)
+async function emitGameStateToRoom(roomId: string): Promise<void> {
+    const gameStateData = await getGameIfExists(roomId)
+    if (!gameStateData) return
     console.log(`Sending gameStateData to room ${roomId}`)
     console.log(
         `playerlist ${roomId} is ${JSON.stringify(
@@ -291,6 +299,18 @@ async function emitUpdatedGameState(roomId: string): Promise<void> {
         )}`
     )
     io.to(roomId).emit(GameEvents.UPDATE_GAME_STATE, gameStateData)
+}
+
+async function emitGameStateToPlayer(socket: Socket): Promise<void> {
+    const player = await db.getPlayer(socket.id)
+    const game = await getGameIfExists(player.roomId)
+    if (!game) return
+    socket.emit(GameEvents.UPDATE_GAME_STATE, game)
+}
+
+async function getGameIfExists(roomId: string): Promise<Game | null> {
+    if (!(await db.gameExists(roomId))) return null
+    return await db.getGame(roomId)
 }
 
 async function validateAnswerWord(word: string): Promise<boolean> {
@@ -347,7 +367,7 @@ async function checkPlayerLastGuess(socket: Socket): Promise<void> {
 async function startNextRoundIfReady(roomId: string): Promise<void> {
     if (await allPlayersHaveFinished(roomId)) {
         await rewardPointsToChooser(roomId)
-        await emitUpdatedGameState(roomId)
+        await emitGameStateToRoom(roomId)
         await resetForNewRound(roomId)
 
         // Timeout for players to see their results

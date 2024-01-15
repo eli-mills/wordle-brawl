@@ -3,11 +3,16 @@ import OpponentPanel from '@/components/OpponentPanel'
 import ChoosingPanel from '@/components/ChoosingPanel'
 import GameOverPanel from '@/components/GameOverPanel'
 import { GlobalContext } from './_app'
-import { useContext } from 'react'
+import { useContext, useEffect } from 'react'
 import styles from '@/styles/Game.module.css'
+import { GameEvents } from '../../../common'
 
 export default function GamePage() {
-    const { game, player } = useContext(GlobalContext)
+    const { game, player, socket } = useContext(GlobalContext)
+
+    useEffect(() => {
+        socket?.emit(GameEvents.REQUEST_GAME_STATE);
+    }, [socket])
 
     return (
         <main className={styles.main}>
