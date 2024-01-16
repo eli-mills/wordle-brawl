@@ -39,6 +39,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
     useEffect(() => {
         socket?.on(GameEvents.UPDATE_GAME_STATE, (gameState: Game) => {
+            console.log('UPDATE_GAME_STATE received')
             setGame(gameState)
             setPlayer(gameState.playerList[socket.id])
         })

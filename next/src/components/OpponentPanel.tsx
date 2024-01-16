@@ -32,7 +32,7 @@ export default function OpponentPanel() {
             />
             <div className={styles.opponentCardList}>
                 {game?.playerList &&
-                    Object.values(game.playerList).map(
+                    Object.values(game.playerList).sort((a, b) => a.createdTimestamp - b.createdTimestamp).map(
                         (currPlayer, index) =>
                             currPlayer.socketId !== player?.socketId && currPlayer.name && (
                                 <OpponentCard key={index} player={currPlayer} />

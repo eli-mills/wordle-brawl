@@ -145,6 +145,7 @@ export default function LobbyPage() {
             `Router is ready and socket exists. Handling query for room ${room}.`
         )
         socket.on(GameEvents.BEGIN_GAME, () => {
+            console.log('BEGIN_GAME request received, pushing to /game')
             router.push('/game')
         })
         handleRoomQuery(room, socket, router)
@@ -170,8 +171,7 @@ export default function LobbyPage() {
                     <GameJoinButton />
                 </main>
             ) : (
-                    <LoadingIcon />
-
+                <LoadingIcon />
             )}
         </>
     )
