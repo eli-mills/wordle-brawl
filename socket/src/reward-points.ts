@@ -32,17 +32,17 @@ export async function rewardPointsToPlayer(socket: Socket): Promise<void> {
 }
 
 /**
- * Adds points to the current choosing Player at end of round
+ * Adds points to the current choosing Player at end of round. Throws error if no chooser.
  *
  * @param roomId: the roomId of the game
  */
 export async function rewardPointsToChooser(roomId: string): Promise<void> {
     const game = await db.getGame(roomId)
 
-    if (!game.chooser)
-        throw new Error(
-            `Invalid state: rewarding points to chooser for game ${game.roomId} which has no chooser`
-        )
+    if (!game.chooser) {
+        console.log(`Game ${game.roomId} has no chooser. No points rewarded.`)
+        return
+    }
     const eligiblePlayers = Object.values(game.playerList).filter(
         (player) =>
             player.socketId !== game.chooser?.socketId &&
@@ -80,6 +80,6 @@ function getNumberOfWrongGuesses(player: Player): number {
 }
 
 function calculateRoundChooserPoints(numberEligiblePlayers: number): number {
-    const maxGuesses = GameParameters.MAX_NUM_GUESSES * (numberEligiblePlayers)
+    const maxGuesses = GameParameters.MAX_NUM_GUESSES * numberEligiblePlayers
     return GameParameters.MAX_CHOOSER_POINTS / maxGuesses
 }
