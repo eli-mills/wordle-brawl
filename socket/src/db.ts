@@ -127,8 +127,8 @@ export async function updatePlayer(player: Player): Promise<void> {
 export async function deletePlayer(socketId: string): Promise<void> {
     const player = await getPlayer(socketId)
 
-    await deleteGuessResultHistory(socketId)
     await removePlayerFromList(socketId, player.roomId)
+    await deleteGuessResultHistory(socketId)
     try {
         await redisClient.del(getRedisPlayerKey(socketId))
     } catch (err) {
@@ -590,7 +590,7 @@ async function removePlayerFromList(
 
     const gameIsEmpty = await deleteGameIfListEmpty(roomId)
     if (!gameIsEmpty) {
-        await replaceLeaderIfRemoved(socketId, roomId)
+        await replaceLeaderAndChooserIfRemoved(socketId, roomId)
     }
     await setGameOverIfGameInvalid(roomId)
 }
@@ -631,7 +631,7 @@ async function deleteGameIfListEmpty(roomId: string): Promise<boolean> {
     return false
 }
 
-async function replaceLeaderIfRemoved(
+async function replaceLeaderAndChooserIfRemoved(
     removedSocketId: string,
     roomId: string
 ): Promise<void> {
@@ -668,6 +668,7 @@ async function replaceLeaderIfRemoved(
             if (!nextChooser) {
                 console.log(`No choosers left for game ${roomId}`)
                 game.status = 'end'
+                game.chooser = null
             } else {
                 game.chooser = nextChooser
             }

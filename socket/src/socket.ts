@@ -323,9 +323,9 @@ async function validateAnswerWord(word: string): Promise<boolean> {
 /**
  *
  * @param roomId ID of the room the Game is being hosted in
- * @returns true if all Players have solved the current round, false if not OR if game status not playing
+ * @returns true if game status = 'playing' and all Players have solved the current round, false if not
  */
-async function allPlayersHaveFinished(roomId: string): Promise<boolean> {
+async function allPlayersReadyForRewards(roomId: string): Promise<boolean> {
     if (!(await db.gameExists(roomId))) return false
 
     const game = await db.getGame(roomId)
@@ -365,7 +365,7 @@ async function checkPlayerLastGuess(socket: Socket): Promise<void> {
 }
 
 async function startNextRoundIfReady(roomId: string): Promise<void> {
-    if (await allPlayersHaveFinished(roomId)) {
+    if (await allPlayersReadyForRewards(roomId)) {
         await rewardPointsToChooser(roomId)
         await emitGameStateToRoom(roomId)
         await resetForNewRound(roomId)
